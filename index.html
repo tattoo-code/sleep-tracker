@@ -540,6 +540,31 @@
         }
     };
 
+    // ★ 棒グラフの中に「💤」を表示するプラグインを追加
+    const sleepEmojiPlugin = {
+        id: 'sleepEmoji',
+        afterDatasetsDraw(chart, args, options) {
+            const { ctx } = chart;
+            ctx.save();
+            ctx.font = '14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            chart.getDatasetMeta(0).data.forEach((bar, index) => {
+                const dataItem = chart.data.datasets[0].data[index];
+                if (dataItem && dataItem.x) {
+                    const centerX = (bar.x + bar.base) / 2;
+                    const centerY = bar.y;
+                    const barWidth = Math.abs(bar.x - bar.base);
+                    if (barWidth > 25) {
+                        ctx.fillText('💤', centerX, centerY);
+                    }
+                }
+            });
+            ctx.restore();
+        }
+    };
+
     const targetSleepPlugin = {
         id: 'targetSleep',
         beforeDraw(chart, args, options) {
@@ -587,7 +612,7 @@
             ctx.restore();
         }
     };
-    Chart.register(targetSleepPlugin, customCanvasBackgroundColor);
+    Chart.register(targetSleepPlugin, customCanvasBackgroundColor, sleepEmojiPlugin);
 
     function timeToDecimal(timeStr) {
         if (!timeStr) return 0;
@@ -1342,7 +1367,6 @@
         document.getElementById('codeModal').style.display = 'none';
     }
 
-    // ★ グラフ画像下部に目標睡眠時間と社会適合者の活動時間の注釈を追加
     function getCombinedChartCanvas() {
         const chartCanvas = document.getElementById('sleepChart');
         const width = chartCanvas.width;
@@ -1363,7 +1387,6 @@
         ctx.font = 'bold 12px sans-serif';
         ctx.textBaseline = 'middle';
         
-        // 1段目（6h以下、6〜9h、9h以上）
         let row1Y = height + 20;
         let startX1 = (width - 240) / 2;
         
@@ -1383,7 +1406,6 @@
         ctx.fillStyle = '#333333';
         ctx.fillText('9h以上', startX1 + 178, row1Y);
         
-        // 2段目（目標睡眠時間・社会適合者の活動時間）
         let row2Y = height + 48;
         let startX2 = (width - 320) / 2;
         
@@ -1473,7 +1495,7 @@
             periodText = '';
         }
         
-        const textStr = `私の${periodText}睡眠社不度は${score}でした！\n#睡眠社不度診断\n${pageUrl}`;
+        const textStr = `私の${periodText}睡眠社不度は${score}でした！\n#睡眠社不度\n${pageUrl}`;
         
         const canvas = document.createElement('canvas');
         canvas.width = 800;

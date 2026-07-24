@@ -524,7 +524,7 @@
 <script>
     let isTargetVisible = true;
     let isActivityVisible = true;
-    let isAxisShifted = false; // デフォルトで0時基準
+    let isAxisShifted = false;
     let currentDailyTotals = {};
     let currentDayNightReversed = {};
 
@@ -825,7 +825,7 @@
         };
     }
 
-    const initialAxisOffset = 0; // デフォルト0時基準
+    const initialAxisOffset = 0;
     const chartInit = updateChartData(initialAxisOffset);
     currentDailyTotals = chartInit.dailyTotals;
     currentDayNightReversed = chartInit.dayNightReversed;
@@ -1342,13 +1342,13 @@
         document.getElementById('codeModal').style.display = 'none';
     }
 
-    // ★ グラフ画像に「目標睡眠時間」と「社会適合者の活動時間」の注釈を含めて生成
+    // ★ グラフ画像下部に目標睡眠時間と社会適合者の活動時間の注釈を追加
     function getCombinedChartCanvas() {
         const chartCanvas = document.getElementById('sleepChart');
         const width = chartCanvas.width;
         const height = chartCanvas.height;
         
-        const extraHeight = 70; // 2段の注釈を収めるため高さを確保
+        const extraHeight = 70;
         const combinedCanvas = document.createElement('canvas');
         combinedCanvas.width = width;
         combinedCanvas.height = height + extraHeight;
@@ -1363,7 +1363,7 @@
         ctx.font = 'bold 12px sans-serif';
         ctx.textBaseline = 'middle';
         
-        // 1段目（睡眠時間の種類：6h以下、6〜9h、9h以上）
+        // 1段目（6h以下、6〜9h、9h以上）
         let row1Y = height + 20;
         let startX1 = (width - 240) / 2;
         

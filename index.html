@@ -161,6 +161,20 @@
             background: #fff;
             width: 100%;
         }
+        .custom-date-container {
+            display: none;
+            gap: 5px;
+            align-items: center;
+            width: 100%;
+            justify-content: center;
+        }
+        .custom-date-container input[type="date"] {
+            padding: 6px;
+            border: 1px solid #2196F3;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            flex: 1;
+        }
         .action-buttons {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -332,12 +346,10 @@
                 width: auto;
             }
             .action-bar {
-                flex-direction: row;
-                justify-content: space-between;
+                flex-direction: column;
             }
             .filter-select {
-                width: auto;
-                flex: 1;
+                width: 100%;
             }
             .action-buttons {
                 display: flex;
@@ -397,16 +409,25 @@
 
     <!-- すべて表示などのフィルター ＋ アクションボタン群 (グラフの下) -->
     <div class="action-bar">
-        <select id="rangeFilter" class="filter-select" onchange="applyChartUpdate()">
+        <select id="rangeFilter" class="filter-select" onchange="handleFilterChange()">
             <option value="all">📅 すべて表示</option>
             <option value="thisMonth">今月 (月別)</option>
+            <option value="lastMonth">先月</option>
             <option value="thisWeek">今週 (週別)</option>
+            <option value="lastWeek">先週</option>
             <option value="past7" selected>過去7日間</option>
             <option value="past14">過去14日間</option>
             <option value="past30">過去30日間</option>
+            <option value="custom">任意の年月日から年月日を指定</option>
         </select>
         
-        <div class="action-buttons">
+        <div id="customDateContainer" class="custom-date-container">
+            <input type="date" id="customStart" onchange="applyChartUpdate()">
+            <span>〜</span>
+            <input type="date" id="customEnd" onchange="applyChartUpdate()">
+        </div>
+
+        <div class="action-buttons" style="margin-top: 5px;">
             <button onclick="openSaveModal()" class="btn-outline">💾 セーブ</button>
             <button onclick="openLoadModal()" class="btn-outline">📁 ロード</button>
             <button onclick="downloadImage()" class="btn-outline">📷 画像保存</button>
@@ -425,7 +446,7 @@
         <div class="stat-card" style="background: #fff8f8; border-color: #ffcdd2; display: flex; flex-direction: column; align-items: center; justify-content: center;">
             <h3 style="color: #c62828; width: 100%; border-bottom: 2px solid #ffcdd2;">⚠️ 社会不適合者度</h3>
             <div id="misfitScore" style="font-size: 2.2rem; font-weight: bold; text-align: center; margin-top: 8px;">0%</div>
-            <div id="misfitDetail" style="text-align: center; font-size: 0.85rem; color: #555; margin-top: 4px; margin-bottom: 10px;">(昼夜逆転 0日 / 記録 0日)</div>
+            <div id="misfitDetail" style="text-align: center; font-size: 0.85rem; color: #555; margin-top: 4px; margin-bottom: 10px;">(該当 0日 / 記録 0日)</div>
             <button onclick="tweetMisfitScore()" class="btn-x" style="padding: 6px 12px; font-size: 0.85rem;">𝕏 結果をポスト</button>
         </div>
         <div class="stat-card">
@@ -569,6 +590,17 @@
         };
     });
 
+    function handleFilterChange() {
+        const filterType = document.getElementById('rangeFilter').value;
+        const customContainer = document.getElementById('customDateContainer');
+        if (filterType === 'custom') {
+            customContainer.style.display = 'flex';
+        } else {
+            customContainer.style.display = 'none';
+        }
+        applyChartUpdate();
+    }
+
     function updateChartData(axisOffset) {
         const dateSet = new Set();
         const data = [];
@@ -599,6 +631,19 @@
                 const dd = String(day).padStart(2, '0');
                 dateSet.add(`${year}-${m}-${dd}`);
             }
+        } else if (filterType === 'lastMonth') {
+            const year = today0.getFullYear();
+            const month = today0.getMonth();
+            const lastMonthStart = new Date(year, month - 1, 1);
+            const lastMonthEnd = new Date(year, month, 0);
+            let cur = new Date(lastMonthStart);
+            while (cur <= lastMonthEnd) {
+                const y = cur.getFullYear();
+                const m = String(cur.getMonth() + 1).padStart(2, '0');
+                const dd = String(cur.getDate()).padStart(2, '0');
+                dateSet.add(`${y}-${m}-${dd}`);
+                cur.setDate(cur.getDate() + 1);
+            }
         } else if (filterType === 'thisWeek') {
             const day = today0.getDay();
             const diff = today0.getDate() - day + (day === 0 ? -6 : 1);
@@ -612,6 +657,36 @@
                     const m = String(d.getMonth() + 1).padStart(2, '0');
                     const dd = String(d.getDate()).padStart(2, '0');
                     dateSet.add(`${y}-${m}-${dd}`);
+                }
+            }
+        } else if (filterType === 'lastWeek') {
+            const day = today0.getDay();
+            const diff = today0.getDate() - day + (day === 0 ? -6 : 1);
+            const thisMonday = new Date(today0);
+            thisMonday.setDate(diff);
+            let cur = new Date(thisMonday);
+            cur.setDate(cur.getDate() - 7);
+            const endD = new Date(thisMonday);
+            endD.setDate(endD.getDate() - 1);
+            while (cur <= endD) {
+                const y = cur.getFullYear();
+                const m = String(cur.getMonth() + 1).padStart(2, '0');
+                const dd = String(cur.getDate()).padStart(2, '0');
+                dateSet.add(`${y}-${m}-${dd}`);
+                cur.setDate(cur.getDate() + 1);
+            }
+        } else if (filterType === 'custom') {
+            const cStart = document.getElementById('customStart').value;
+            const cEnd = document.getElementById('customEnd').value;
+            if (cStart && cEnd) {
+                let cur = new Date(cStart);
+                let endD = new Date(cEnd);
+                while (cur <= endD) {
+                    const y = cur.getFullYear();
+                    const m = String(cur.getMonth() + 1).padStart(2, '0');
+                    const dd = String(cur.getDate()).padStart(2, '0');
+                    dateSet.add(`${y}-${m}-${dd}`);
+                    cur.setDate(cur.getDate() + 1);
                 }
             }
         } else {
@@ -859,7 +934,6 @@
             return;
         }
 
-        // ★追加: 「[入力した年月日時] を保存しますか」と表示し確認
         const confirmMsg = `${startDVal} ${startTVal} 〜 ${endDVal} ${endTVal} を保存しますか？`;
         if (!confirm(confirmMsg)) {
             return;
@@ -903,15 +977,25 @@
         const sortedDates = Object.keys(currentDailyTotals).sort();
 
         const totalDays = sortedDates.length;
-        const reversedDays = Object.keys(currentDayNightReversed).length;
+        
+        // ★社会不適合者度の計算：昼夜逆転日 または 9h以上睡眠の日 の合計日数 ÷ 記録日数
+        let misfitDaysCount = 0;
+        sortedDates.forEach(dateStr => {
+            const isRev = currentDayNightReversed[dateStr];
+            const totalHours = currentDailyTotals[dateStr] || 0;
+            if (isRev || totalHours >= 9) {
+                misfitDaysCount++;
+            }
+        });
+
         let misfitPercentage = 0;
         if (totalDays > 0) {
-            misfitPercentage = Math.round((reversedDays / totalDays) * 100);
+            misfitPercentage = Math.round((misfitDaysCount / totalDays) * 100);
         }
 
         const scoreEl = document.getElementById('misfitScore');
         scoreEl.innerText = `${misfitPercentage}％`;
-        document.getElementById('misfitDetail').innerText = `(昼夜逆転 ${reversedDays}日 / 記録 ${totalDays}日)`;
+        document.getElementById('misfitDetail').innerText = `(該当 ${misfitDaysCount}日 / 記録 ${totalDays}日)`;
 
         if (misfitPercentage < 20) {
             scoreEl.style.color = '#2e7d32'; 
@@ -952,7 +1036,10 @@
             
             let warningHtml = '';
             if (currentDayNightReversed[dateStr]) {
-                warningHtml = `<span style="color: #d32f2f; font-size: 0.8rem; margin-left: 8px; font-weight: bold;">⚠昼夜逆転</span>`;
+                warningHtml += `<span style="color: #d32f2f; font-size: 0.8rem; margin-left: 4px; font-weight: bold;">⚠昼夜逆転</span>`;
+            }
+            if ((currentDailyTotals[dateStr] || 0) >= 9) {
+                warningHtml += `<span style="color: #d32f2f; font-size: 0.8rem; margin-left: 4px; font-weight: bold;">💤9h以上</span>`;
             }
             
             const total = currentDailyTotals[dateStr];

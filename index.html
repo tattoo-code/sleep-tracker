@@ -199,7 +199,7 @@
         }
         .custom-date-container input[type="date"] {
             padding: 6px;
-            border: 1px solid #2196F3;
+            border: 2px solid #2196F3;
             border-radius: 4px;
             font-size: 0.9rem;
             flex: 1;
@@ -528,6 +528,17 @@
     let currentDailyTotals = {};
     let currentDayNightReversed = {};
 
+    // 曜日付きフォーマット用ヘルパー関数
+    function formatDateWithDay(dateStr) {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length !== 3) return dateStr.replace(/-/g, '/');
+        const d = new Date(parts[0], parts[1] - 1, parts[2]);
+        const days = ['日', '月', '火', '水', '木', '金', '土'];
+        const dayOfWeek = days[d.getDay()];
+        return `${parts[0]}/${parts[1]}/${parts[2]}(${dayOfWeek})`;
+    }
+
     const customCanvasBackgroundColor = {
         id: 'customCanvasBackgroundColor',
         beforeDraw: (chart, args, options) => {
@@ -540,7 +551,6 @@
         }
     };
 
-    // ★ 棒グラフの中に「💤」を表示するプラグインを追加
     const sleepEmojiPlugin = {
         id: 'sleepEmoji',
         afterDatasetsDraw(chart, args, options) {
@@ -913,10 +923,11 @@
                         autoSkip: false,
                         callback: function(value, index, ticks) {
                             const dateStr = this.getLabelForValue(value);
+                            const formatted = formatDateWithDay(dateStr);
                             if (currentDayNightReversed[dateStr]) {
-                                return [dateStr, '⚠昼夜逆転'];
+                                return [formatted, '⚠昼夜逆転'];
                             }
-                            return dateStr;
+                            return formatted;
                         },
                         color: function(context) {
                             if (context.chart.data.labels) {
@@ -934,8 +945,8 @@
                     callbacks: {
                         label: function(context) {
                             const record = context.raw.record;
-                            const sDate = record.startDate.substring(5).replace('-', '/');
-                            const eDate = record.endDate.substring(5).replace('-', '/');
+                            const sDate = formatDateWithDay(record.startDate);
+                            const eDate = formatDateWithDay(record.endDate);
                             return `${sDate} ${record.start} 〜 ${eDate} ${record.end} (計: ${record.hours.toFixed(1)}時間)`;
                         }
                     }
@@ -1054,7 +1065,7 @@
             return;
         }
 
-        const confirmMsg = `${startDVal} ${startTVal} 〜 ${endDVal} ${endTVal} を保存しますか？`;
+        const confirmMsg = `${formatDateWithDay(startDVal)} ${startTVal} 〜 ${formatDateWithDay(endDVal)} ${endTVal} を保存しますか？`;
         if (!confirm(confirmMsg)) {
             return;
         }
@@ -1136,7 +1147,7 @@
             sunday.setDate(sunday.getDate() + 6);
             const sundayStr = sunday.toISOString().split('T')[0];
             
-            const weekLabel = `${mondayStr.replace(/-/g, '/')} 〜 ${sundayStr.replace(/-/g, '/')}`;
+            const weekLabel = `${formatDateWithDay(mondayStr)} 〜 ${formatDateWithDay(sundayStr)}`;
             
             if (!weeklyStats[weekLabel]) {
                 weeklyStats[weekLabel] = { total: 0, count: 0 };
@@ -1166,7 +1177,7 @@
             if (total <= 6) timeColor = '#1976d2';
             if (total >= 9) timeColor = '#d32f2f';
             
-            li.innerHTML = `<span>${dateStr.replace(/-/g, '/')} ${warningHtml}</span> <strong style="color: ${timeColor};">${total.toFixed(1)} 時間</strong>`;
+            li.innerHTML = `<span>${formatDateWithDay(dateStr)} ${warningHtml}</span> <strong style="color: ${timeColor};">${total.toFixed(1)} 時間</strong>`;
             dailyList.appendChild(li);
         });
         if(reversedDates.length === 0) dailyList.innerHTML = '<li>データがありません</li>';
@@ -1204,8 +1215,8 @@
         reversedData.forEach(d => {
             const li = document.createElement('li');
             li.className = 'history-item';
-            const sDate = d.startDate.replace(/-/g, '/');
-            const eDate = d.endDate.replace(/-/g, '/');
+            const sDate = formatDateWithDay(d.startDate);
+            const eDate = formatDateWithDay(d.endDate);
             const text = document.createElement('span');
             text.textContent = `${sDate} ${d.start} 〜 ${eDate} ${d.end} (${d.hours.toFixed(1)}時間)`;
             const delBtn = document.createElement('button');
@@ -1367,57 +1378,70 @@
         document.getElementById('codeModal').style.display = 'none';
     }
 
+    // ★ グラフポスト画像：3:4 (900x1200) にし、説明を一列に、フォントサイズを大きくする
     function getCombinedChartCanvas() {
         const chartCanvas = document.getElementById('sleepChart');
-        const width = chartCanvas.width;
-        const height = chartCanvas.height;
+        const originalWidth = chartCanvas.width;
+        const originalHeight = chartCanvas.height;
         
-        const extraHeight = 70;
         const combinedCanvas = document.createElement('canvas');
-        combinedCanvas.width = width;
-        combinedCanvas.height = height + extraHeight;
+        combinedCanvas.width = 900;
+        combinedCanvas.height = 1200; // 3:4 のアスペクト比
         const ctx = combinedCanvas.getContext('2d');
         
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
         
-        ctx.drawImage(chartCanvas, 0, 0);
+        // 上部にグラフを描画（幅840pxに合わせて中央配置）
+        const targetWidth = 840;
+        const targetHeight = (originalHeight / originalWidth) * targetWidth;
+        const startX = (900 - targetWidth) / 2;
+        const startY = 80;
         
+        ctx.drawImage(chartCanvas, startX, startY, targetWidth, targetHeight);
+        
+        // 下部に、説明を一列（横並び）＆大きめのフォントで描画
         ctx.save();
-        ctx.font = 'bold 12px sans-serif';
+        ctx.font = 'bold 16px sans-serif'; // フォントサイズを大きく
         ctx.textBaseline = 'middle';
         
-        let row1Y = height + 20;
-        let startX1 = (width - 240) / 2;
+        const legendY = startY + targetHeight + 90;
         
-        ctx.fillStyle = 'rgba(54, 162, 235, 0.8)';
-        ctx.fillRect(startX1, row1Y - 6, 12, 12);
-        ctx.fillStyle = '#333333';
-        ctx.textAlign = 'left';
-        ctx.fillText('6h以下', startX1 + 18, row1Y);
+        // すべての説明項目を1つの横並びグループとして中央配置
+        // 項目： [■ 6h以下] [■ 6〜9h] [■ 9h以上] [■ 目標睡眠時間] [■ 社会適合者の活動時間]
+        const items = [
+            { color: 'rgba(54, 162, 235, 0.8)', text: '6h以下' },
+            { color: 'rgba(76, 175, 80, 0.6)', text: '6〜9h' },
+            { color: 'rgba(255, 99, 132, 0.8)', text: '9h以上' },
+            { color: 'rgba(33, 150, 243, 0.3)', text: '目標睡眠時間' },
+            { color: 'rgba(255, 235, 59, 0.5)', text: '社会適合者の活動時間' }
+        ];
         
-        ctx.fillStyle = 'rgba(76, 175, 80, 0.6)';
-        ctx.fillRect(startX1 + 85, row1Y - 6, 12, 12);
-        ctx.fillStyle = '#333333';
-        ctx.fillText('6〜9h', startX1 + 103, row1Y);
+        // ざっくり全体の幅を測る（簡易計測）
+        ctx.font = 'bold 15px sans-serif';
+        let totalWidth = 0;
+        const padding = 24;
+        items.forEach(item => {
+            const metrics = ctx.measureText(item.text);
+            totalWidth += 16 + 8 + metrics.width + padding;
+        });
+        totalWidth -= padding;
         
-        ctx.fillStyle = 'rgba(255, 99, 132, 0.8)';
-        ctx.fillRect(startX1 + 160, row1Y - 6, 12, 12);
-        ctx.fillStyle = '#333333';
-        ctx.fillText('9h以上', startX1 + 178, row1Y);
+        let currentX = (900 - totalWidth) / 2;
         
-        let row2Y = height + 48;
-        let startX2 = (width - 320) / 2;
-        
-        ctx.fillStyle = 'rgba(33, 150, 243, 0.3)';
-        ctx.fillRect(startX2, row2Y - 6, 12, 12);
-        ctx.fillStyle = '#333333';
-        ctx.fillText('目標睡眠時間', startX2 + 18, row2Y);
-        
-        ctx.fillStyle = 'rgba(255, 235, 59, 0.5)';
-        ctx.fillRect(startX2 + 130, row2Y - 6, 12, 12);
-        ctx.fillStyle = '#333333';
-        ctx.fillText('社会適合者の活動時間', startX2 + 148, row2Y);
+        items.forEach(item => {
+            // カラーボックス
+            ctx.fillStyle = item.color;
+            ctx.fillRect(currentX, legendY - 8, 16, 16);
+            
+            // テキスト
+            ctx.fillStyle = '#333333';
+            ctx.textAlign = 'left';
+            ctx.fillText(item.text, currentX + 24, legendY);
+            
+            const metrics = ctx.measureText(item.text);
+            currentX += 16 + 8 + metrics.width + padding;
+        });
         
         ctx.restore();
         return combinedCanvas;
@@ -1466,19 +1490,20 @@
         let periodText = '';
         
         if (filterType === 'thisWeek') {
-            periodText = '今週の';
+            periodText = '今週';
         } else if (filterType === 'lastWeek') {
-            periodText = '先週の';
+            periodText = '先週';
         } else if (filterType === 'thisMonth') {
-            periodText = '今月の';
+            periodText = '今月';
         } else if (filterType === 'lastMonth') {
-            periodText = '先月の';
+            periodText = '先月';
         } else if (filterType === 'past7') {
-            periodText = '過去7日間の';
+            periodTest = '過去7日間';
+            periodText = '過去7日間';
         } else if (filterType === 'past14') {
-            periodText = '過去14日間の';
+            periodText = '過去14日間';
         } else if (filterType === 'past30') {
-            periodText = '過去30日間の';
+            periodText = '過去30日間';
         } else if (filterType === 'custom') {
             const cStart = document.getElementById('customStart').value;
             const cEnd = document.getElementById('customEnd').value;
@@ -1487,7 +1512,7 @@
                     const [y, m, d] = dStr.split('-');
                     return `${y}年${parseInt(m)}月${parseInt(d)}日`;
                 };
-                periodText = `${formatDate(cStart)}～${formatDate(cEnd)}の`;
+                periodText = `${formatDate(cStart)}～${formatDate(cEnd)}`;
             } else {
                 periodText = '';
             }
@@ -1495,7 +1520,9 @@
             periodText = '';
         }
         
-        const textStr = `私の${periodText}睡眠社不度は${score}でした！\n#睡眠社不度\n${pageUrl}`;
+        const textStr = periodText 
+            ? `私の${periodText}の睡眠社不度は${score}でした！\n#睡眠社不度\n${pageUrl}`
+            : `私の睡眠社不度は${score}でした！\n#睡眠社不度\n${pageUrl}`;
         
         const canvas = document.createElement('canvas');
         canvas.width = 800;

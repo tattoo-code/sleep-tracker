@@ -141,7 +141,6 @@
             border-radius: 3px;
         }
         
-        /* グラフをスクロール可能にするためのラッパー */
         .chart-container-wrapper {
             width: 100%;
             max-height: 60vh;
@@ -213,6 +212,33 @@
             border-radius: 4px;
             border: 1px solid #eaeaea;
         }
+
+        /* モーダルのスタイル */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .modal-close {
+            float: right;
+            cursor: pointer;
+            font-size: 1.5rem;
+            line-height: 1;
+            color: #555;
+        }
+        .modal-close:hover { color: #000; }
     </style>
 </head>
 <body>
@@ -220,7 +246,6 @@
 <div class="container">
     <h1>睡眠時間記録</h1>
 
-    <!-- アクション＆フィルタリングバー -->
     <div class="action-bar">
         <select id="rangeFilter" class="filter-select" onchange="applyChartUpdate()">
             <option value="all">📅 すべて表示</option>
@@ -231,11 +256,8 @@
             <option value="past30">過去30日間</option>
         </select>
         
-        <button onclick="exportData()" class="btn-outline">💾 バックアップ保存</button>
-        <label class="btn-outline btn-label">
-            📁 復元
-            <input type="file" id="importInput" accept=".json" style="display:none;" onchange="importData(event)">
-        </label>
+        <button onclick="openSaveModal()" class="btn-outline">💾 セーブコード発行</button>
+        <button onclick="openLoadModal()" class="btn-outline">📁 コードでロード</button>
         <button onclick="downloadImage()" class="btn-outline">📷 画像保存</button>
         <button onclick="tweetChart()" class="btn-x">𝕏 ポスト</button>
     </div>
@@ -271,7 +293,6 @@
         <div class="legend-item"><span class="legend-color" style="background: rgba(255, 99, 132, 0.8);"></span> 9時間以上 (過剰)</div>
     </div>
 
-    <!-- グラフエリア（スクロール対応） -->
     <div class="chart-container-wrapper">
         <div class="chart-container">
             <canvas id="sleepChart"></canvas>
@@ -295,13 +316,25 @@
     </div>
 </div>
 
+<!-- セーブ・ロード用のモーダル -->
+<div id="codeModal" class="modal-overlay">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeCodeModal()">&times;</span>
+        <h2 id="codeModalTitle" style="margin-top:0;">セーブデータ</h2>
+        <p id="codeModalDesc" style="font-size: 0.9rem; color: #555; line-height: 1.5;"></p>
+        <textarea id="dataCodeArea" style="width: 100%; height: 150px; padding: 10px; box-sizing: border-box; margin-bottom: 15px; font-family: monospace; font-size: 0.85rem; border-radius: 4px; border: 1px solid #ccc;"></textarea>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button id="codeActionBtn" style="background-color: #4CAF50; flex:1; font-weight: bold;"></button>
+        </div>
+    </div>
+</div>
+
 <script>
     let isTargetVisible = false;
     let isAxisShifted = false;
     let currentDailyTotals = {};
     let currentDayNightReversed = {};
 
-    // 画像保存時に背景を白にするプラグイン
     const customCanvasBackgroundColor = {
         id: 'customCanvasBackgroundColor',
         beforeDraw: (chart, args, options) => {
@@ -379,7 +412,6 @@
     document.getElementById('endTimeInput').value = '07:00';
     autoSetEndDate();
 
-    // 端末のローカルストレージからデータを読み込み
     let sleepData = JSON.parse(localStorage.getItem('sleepData')) || [];
     
     sleepData = sleepData.map((d, index) => {
@@ -555,7 +587,7 @@
                     type: 'category',
                     title: { display: true, text: '日付' },
                     ticks: {
-                        autoSkip: false, // 縦軸のラベルを省略せず全て表示
+                        autoSkip: false,
                         callback: function(value, index, ticks) {
                             const dateStr = this.getLabelForValue(value);
                             if (currentDayNightReversed[dateStr]) {
@@ -599,7 +631,6 @@
         }
     });
 
-    // グラフ更新とコンテナ高さの自動調整
     function applyChartUpdate() {
         const axisOffset = isAxisShifted ? timeToDecimal(document.getElementById('targetEndInput').value) : 0;
         const updated = updateChartData(axisOffset);
@@ -607,7 +638,6 @@
         currentDailyTotals = updated.dailyTotals;
         currentDayNightReversed = updated.dayNightReversed;
 
-        // データ量に応じてグラフの高さを動的に調整し、潰れを防ぐ
         const chartContainer = document.querySelector('.chart-container');
         const labelCount = updated.labels.length;
         const newHeight = Math.max(400, labelCount * 30 + 100); 
@@ -712,13 +742,9 @@
         }
     }
 
-    // 端末のローカルストレージへ保存する処理
     function saveAndRender() {
         sleepData.sort((a, b) => new Date(`${a.startDate}T${a.start}:00`) - new Date(`${b.startDate}T${b.start}:00`));
-        
-        // ローカルストレージ（ブラウザキャッシュ）に書き込み
         localStorage.setItem('sleepData', JSON.stringify(sleepData));
-        
         applyChartUpdate();
         renderHistory();
     }
@@ -819,44 +845,74 @@
         });
     }
 
-    function exportData() {
+    // --- セーブデータ用コードの処理 ---
+
+    function openSaveModal() {
         if (sleepData.length === 0) {
             alert('保存するデータがありません。');
             return;
         }
-        const dataStr = JSON.stringify(sleepData);
-        const blob = new Blob([dataStr], {type: "application/json"});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'sleep_tracker_data.json';
-        a.click();
-        URL.revokeObjectURL(url);
+        // データをBase64エンコードして文字列コード化
+        const code = btoa(encodeURIComponent(JSON.stringify(sleepData)));
+        
+        document.getElementById('codeModalTitle').innerText = '💾 セーブデータを発行';
+        document.getElementById('codeModalDesc').innerText = '以下のコードをコピーして保存してください。別の端末で復元する際に使用します。';
+        const textArea = document.getElementById('dataCodeArea');
+        textArea.value = code;
+        textArea.readOnly = true;
+        
+        const actionBtn = document.getElementById('codeActionBtn');
+        actionBtn.innerText = '📋 コードをコピー';
+        actionBtn.onclick = () => {
+            textArea.select();
+            document.execCommand('copy');
+            alert('コードをコピーしました！');
+        };
+        
+        document.getElementById('codeModal').style.display = 'flex';
     }
 
-    function importData(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
+    function openLoadModal() {
+        document.getElementById('codeModalTitle').innerText = '📁 コードで復元';
+        document.getElementById('codeModalDesc').innerText = '保存しておいたコードを貼り付けて、「復元する」ボタンを押してください。※現在のデータは上書きされます。';
+        const textArea = document.getElementById('dataCodeArea');
+        textArea.value = '';
+        textArea.readOnly = false;
+        
+        const actionBtn = document.getElementById('codeActionBtn');
+        actionBtn.innerText = '🔄 復元する';
+        actionBtn.onclick = () => {
+            const code = document.getElementById('dataCodeArea').value.trim();
+            if (!code) {
+                alert('コードを入力してください。');
+                return;
+            }
             try {
-                const imported = JSON.parse(e.target.result);
+                // Base64コードをデコードしてJSONパース
+                const imported = JSON.parse(decodeURIComponent(atob(code)));
                 if (Array.isArray(imported)) {
                     if (confirm('現在のデータを上書きして復元しますか？')) {
                         sleepData = imported;
                         saveAndRender();
                         alert('データを復元しました。');
+                        closeCodeModal();
                     }
                 } else {
-                    alert('正しいデータファイルではありません。');
+                    alert('正しいデータコードではありません。');
                 }
             } catch (err) {
-                alert('データの読み込みに失敗しました。');
+                alert('データの読み込みに失敗しました。コードが間違っている可能性があります。');
             }
         };
-        reader.readAsText(file);
-        event.target.value = '';
+        
+        document.getElementById('codeModal').style.display = 'flex';
     }
+
+    function closeCodeModal() {
+        document.getElementById('codeModal').style.display = 'none';
+    }
+
+    // --- 共有機能 ---
 
     function downloadImage() {
         const link = document.createElement('a');
@@ -867,20 +923,22 @@
 
     async function tweetChart() {
         const canvas = document.getElementById('sleepChart');
-        const textStr = '私の睡眠記録グラフです！📊\n#睡眠記録アプリ #睡眠改善\n\n';
+        const pageUrl = window.location.href; // 現在のページのURLを取得
+        const textStr = `私の睡眠記録グラフです！📊\n#睡眠記録アプリ #睡眠改善\n${pageUrl}`;
         
         if (navigator.share) {
+            // スマホ等Web Share API対応ブラウザの場合は画像も合わせて渡す
             canvas.toBlob(async (blob) => {
                 const file = new File([blob], 'sleep_chart.png', { type: 'image/png' });
                 try {
                     await navigator.share({
-                        title: '睡眠時間記録',
                         text: textStr,
                         files: [file]
                     });
                 } catch (err) {}
             });
         } else {
+            // PC等の場合は画像をダウンロード後、テキストとURL入りのツイート画面を開く
             downloadImage();
             alert('画像をダウンロードしました。\nポスト画面に手動で画像を添付してシェアしてください。');
             const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(textStr)}`;

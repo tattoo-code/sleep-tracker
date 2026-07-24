@@ -1236,11 +1236,46 @@
         }
     }
 
+    // ★ 社会不適合者度のツイート文言をフィルター選択に応じて変更
     async function tweetMisfitScore() {
         const score = document.getElementById('misfitScore').innerText;
         const detail = document.getElementById('misfitDetail').innerText;
         const pageUrl = window.location.href;
-        const textStr = `私の睡眠社不度は${score}でした！\n#睡眠記録アプリ\n${pageUrl}`;
+        
+        const filterType = document.getElementById('rangeFilter').value;
+        let periodText = '';
+        
+        if (filterType === 'thisWeek') {
+            periodText = '今週の';
+        } else if (filterType === 'lastWeek') {
+            periodText = '先週の';
+        } else if (filterType === 'thisMonth') {
+            periodText = '今月の';
+        } else if (filterType === 'lastMonth') {
+            periodText = '先月の';
+        } else if (filterType === 'past7') {
+            periodText = '過去7日間の';
+        } else if (filterType === 'past14') {
+            periodText = '過去14日間の';
+        } else if (filterType === 'past30') {
+            periodText = '過去30日間の';
+        } else if (filterType === 'custom') {
+            const cStart = document.getElementById('customStart').value;
+            const cEnd = document.getElementById('customEnd').value;
+            if (cStart && cEnd) {
+                const formatDate = (dStr) => {
+                    const [y, m, d] = dStr.split('-');
+                    return `${y}年${parseInt(m)}月${parseInt(d)}日`;
+                };
+                periodText = `${formatDate(cStart)}～${formatDate(cEnd)}の`;
+            } else {
+                periodText = '';
+            }
+        } else {
+            periodText = '';
+        }
+        
+        const textStr = `私の${periodText}睡眠社不度は${score}でした！\n#睡眠社不度\n${pageUrl}`;
         
         const canvas = document.createElement('canvas');
         canvas.width = 800;

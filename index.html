@@ -56,7 +56,7 @@
             justify-content: center;
             align-items: center;
         }
-        input[type="date"], input[type="time"], input[type="text"], input[type="password"] {
+        input[type="date"], input[type="time"] {
             padding: 8px;
             border: 1px solid #ccc;
             border-radius: 4px;
@@ -94,10 +94,6 @@
             background-color: #fff;
             color: #555;
             border: 1px solid #ccc;
-        }
-        .btn-cloud {
-            background-color: #2196F3;
-            color: white;
         }
         .btn-x {
             background-color: #0f1419;
@@ -160,7 +156,6 @@
             position: relative;
             width: 100%;
             background: #fff;
-            /* 高さはJSで動的に設定されます */
         }
 
         .stats-section {
@@ -218,33 +213,6 @@
             border-radius: 4px;
             border: 1px solid #eaeaea;
         }
-
-        /* モーダルのスタイル */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-        .modal-content {
-            background: #fff;
-            padding: 25px;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-        .modal-close {
-            float: right;
-            cursor: pointer;
-            font-size: 1.5rem;
-            line-height: 1;
-            color: #555;
-        }
-        .modal-close:hover { color: #000; }
     </style>
 </head>
 <body>
@@ -263,7 +231,6 @@
             <option value="past30">過去30日間</option>
         </select>
         
-        <button onclick="openCloudModal()" class="btn-cloud">☁️ クラウド同期</button>
         <button onclick="exportData()" class="btn-outline">💾 バックアップ保存</button>
         <label class="btn-outline btn-label">
             📁 復元
@@ -328,37 +295,13 @@
     </div>
 </div>
 
-<!-- クラウド同期モーダル -->
-<div id="cloudModal" class="modal-overlay">
-    <div class="modal-content">
-        <span class="modal-close" onclick="closeCloudModal()">&times;</span>
-        <h2 style="margin-top:0;">☁️ クラウド同期設定</h2>
-        <p style="font-size: 0.9rem; color: #555; line-height: 1.5;">
-            あなた専用のGitHubの「Gist」機能を使って、データを安全にクラウドへ保存・同期します。<br>
-            <a href="https://github.com/settings/tokens/new?scopes=gist&description=SleepTrackerSync" target="_blank" style="color:#2196F3; font-weight:bold;">こちらをクリック</a>して、ページ一番下の緑色のボタンから Access Token を発行し、下の欄に貼り付けてください。
-        </p>
-        <div style="margin-bottom: 15px;">
-            <label style="display:block; font-weight:bold; margin-bottom:5px;">GitHub Access Token (必須)</label>
-            <input type="password" id="githubToken" style="width: 100%; box-sizing: border-box;" placeholder="ghp_xxxxxxxxxxxxxxx">
-        </div>
-        <div style="margin-bottom: 25px;">
-            <label style="display:block; font-weight:bold; margin-bottom:5px;">Gist ID (初回保存時に自動発行されます)</label>
-            <input type="text" id="gistId" style="width: 100%; box-sizing: border-box; background:#f5f5f5;" placeholder="別端末で復元する際はここに入力">
-            <small style="color:#888;">※このIDをスマホ版に入力するとデータを同期できます。</small>
-        </div>
-        <div style="display: flex; gap: 10px; justify-content: center;">
-            <button id="saveCloudBtn" onclick="saveToCloud()" style="background-color: #4CAF50; flex:1;">☁️ クラウドへ保存</button>
-            <button id="loadCloudBtn" onclick="loadFromCloud()" style="background-color: #FF9800; flex:1;">☁️ クラウドから復元</button>
-        </div>
-    </div>
-</div>
-
 <script>
     let isTargetVisible = false;
     let isAxisShifted = false;
     let currentDailyTotals = {};
     let currentDayNightReversed = {};
 
+    // 画像保存時に背景を白にするプラグイン
     const customCanvasBackgroundColor = {
         id: 'customCanvasBackgroundColor',
         beforeDraw: (chart, args, options) => {
@@ -436,6 +379,7 @@
     document.getElementById('endTimeInput').value = '07:00';
     autoSetEndDate();
 
+    // 端末のローカルストレージからデータを読み込み
     let sleepData = JSON.parse(localStorage.getItem('sleepData')) || [];
     
     sleepData = sleepData.map((d, index) => {
@@ -611,7 +555,7 @@
                     type: 'category',
                     title: { display: true, text: '日付' },
                     ticks: {
-                        autoSkip: false, // ★縦軸のラベルを省略せず全て表示
+                        autoSkip: false, // 縦軸のラベルを省略せず全て表示
                         callback: function(value, index, ticks) {
                             const dateStr = this.getLabelForValue(value);
                             if (currentDayNightReversed[dateStr]) {
@@ -663,7 +607,7 @@
         currentDailyTotals = updated.dailyTotals;
         currentDayNightReversed = updated.dayNightReversed;
 
-        // ★データ量に応じてグラフの高さを動的に調整し、潰れを防ぐ
+        // データ量に応じてグラフの高さを動的に調整し、潰れを防ぐ
         const chartContainer = document.querySelector('.chart-container');
         const labelCount = updated.labels.length;
         const newHeight = Math.max(400, labelCount * 30 + 100); 
@@ -768,9 +712,13 @@
         }
     }
 
+    // 端末のローカルストレージへ保存する処理
     function saveAndRender() {
         sleepData.sort((a, b) => new Date(`${a.startDate}T${a.start}:00`) - new Date(`${b.startDate}T${b.start}:00`));
+        
+        // ローカルストレージ（ブラウザキャッシュ）に書き込み
         localStorage.setItem('sleepData', JSON.stringify(sleepData));
+        
         applyChartUpdate();
         renderHistory();
     }
@@ -937,128 +885,6 @@
             alert('画像をダウンロードしました。\nポスト画面に手動で画像を添付してシェアしてください。');
             const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(textStr)}`;
             window.open(url, '_blank');
-        }
-    }
-
-    // --- GitHub Gistを利用したクラウド同期機能 ---
-    const GITHUB_API = 'https://api.github.com/gists';
-
-    function openCloudModal() {
-        document.getElementById('githubToken').value = localStorage.getItem('githubToken') || '';
-        document.getElementById('gistId').value = localStorage.getItem('gistId') || '';
-        document.getElementById('cloudModal').style.display = 'flex';
-    }
-
-    function closeCloudModal() {
-        document.getElementById('cloudModal').style.display = 'none';
-    }
-
-    async function saveToCloud() {
-        const token = document.getElementById('githubToken').value.trim();
-        let gistId = document.getElementById('gistId').value.trim();
-
-        if (!token) {
-            alert('GitHub Access Tokenを入力してください。');
-            return;
-        }
-
-        const data = JSON.stringify(sleepData);
-        const body = {
-            description: "Sleep Tracker Data",
-            public: false, // データを非公開で作成
-            files: {
-                "sleep_data.json": { content: data }
-            }
-        };
-
-        const headers = {
-            'Authorization': `token ${token}`,
-            'Accept': 'application/vnd.github.v3+json',
-            'Content-Type': 'application/json'
-        };
-
-        try {
-            const btn = document.getElementById('saveCloudBtn');
-            btn.textContent = '保存中...';
-            btn.disabled = true;
-
-            let response;
-            if (gistId) {
-                // 既存のGistを更新
-                response = await fetch(`${GITHUB_API}/${gistId}`, {
-                    method: 'PATCH',
-                    headers: headers,
-                    body: JSON.stringify(body)
-                });
-            } else {
-                // 新規作成
-                response = await fetch(GITHUB_API, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify(body)
-                });
-            }
-
-            if (!response.ok) throw new Error('API Error');
-            const result = await response.json();
-            
-            if (!gistId) {
-                gistId = result.id;
-                document.getElementById('gistId').value = gistId;
-            }
-            
-            localStorage.setItem('githubToken', token);
-            localStorage.setItem('gistId', gistId);
-            alert('クラウドにデータを保存しました！\n（スマホで同期する際は、発行されたGist IDを入力してください）');
-        } catch (e) {
-            alert('保存に失敗しました。Access Tokenの権限（gistのチェック）や文字列が正しいか確認してください。');
-        } finally {
-            const btn = document.getElementById('saveCloudBtn');
-            btn.textContent = '☁️ クラウドへ保存';
-            btn.disabled = false;
-        }
-    }
-
-    async function loadFromCloud() {
-        const token = document.getElementById('githubToken').value.trim();
-        const gistId = document.getElementById('gistId').value.trim();
-
-        if (!token || !gistId) {
-            alert('復元には Access Token と Gist ID の両方が必要です。');
-            return;
-        }
-
-        const headers = {
-            'Authorization': `token ${token}`,
-            'Accept': 'application/vnd.github.v3+json'
-        };
-
-        try {
-            const btn = document.getElementById('loadCloudBtn');
-            btn.textContent = '復元中...';
-            btn.disabled = true;
-
-            const response = await fetch(`${GITHUB_API}/${gistId}`, { headers });
-            if (!response.ok) throw new Error('API Error');
-            const result = await response.json();
-            
-            const content = result.files["sleep_data.json"].content;
-            const importedData = JSON.parse(content);
-            
-            if (confirm('現在のローカルデータをクラウドのデータで上書きしますか？')) {
-                sleepData = importedData;
-                localStorage.setItem('githubToken', token);
-                localStorage.setItem('gistId', gistId);
-                saveAndRender();
-                alert('クラウドからデータを復元しました！');
-                closeCloudModal();
-            }
-        } catch (e) {
-            alert('読み込みに失敗しました。Access Token と Gist ID が正しいか確認してください。');
-        } finally {
-            const btn = document.getElementById('loadCloudBtn');
-            btn.textContent = '☁️ クラウドから復元';
-            btn.disabled = false;
         }
     }
 

@@ -80,7 +80,24 @@
             font-weight: bold;
         }
 
-        /* 目標設定エリア */
+        /* グラフエリア */
+        .chart-container-wrapper {
+            width: 100%;
+            max-height: 50vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fff;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            background: #fff;
+        }
+
+        /* 目標設定エリア (グラフの下) */
         .target-setting-group {
             display: flex;
             flex-direction: column;
@@ -122,7 +139,7 @@
             color: white;
         }
 
-        /* アクション＆フィルターバー (グラフの上) */
+        /* アクション＆フィルターバー (グラフの下) */
         .action-bar {
             display: flex;
             flex-direction: column;
@@ -176,7 +193,7 @@
             display: flex;
             justify-content: center;
             gap: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             font-size: 0.85rem;
             flex-wrap: wrap;
         }
@@ -186,22 +203,6 @@
             width: 12px;
             height: 12px;
             border-radius: 3px;
-        }
-        
-        .chart-container-wrapper {
-            width: 100%;
-            max-height: 50vh;
-            overflow-y: auto;
-            overflow-x: hidden;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background: #fff;
-        }
-        .chart-container {
-            position: relative;
-            width: 100%;
-            background: #fff;
         }
 
         .stats-section {
@@ -375,7 +376,14 @@
         <button onclick="addRecord()">記録する</button>
     </div>
 
-    <!-- 目標設定エリア -->
+    <!-- グラフエリア -->
+    <div class="chart-container-wrapper">
+        <div class="chart-container">
+            <canvas id="sleepChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 目標設定エリア (グラフの下) -->
     <div class="target-setting-group">
         <div class="target-setting-row">
             <label>目標:</label>
@@ -383,17 +391,17 @@
             <span>〜</span>
             <input type="time" id="targetEndInput" value="06:00" onchange="onTargetChange()">
         </div>
-        <button id="toggleTargetBtn" class="target-btn" onclick="toggleTargetDisplay()">目標をグラフに表示</button>
-        <button id="toggleAxisBtn" class="target-btn" onclick="toggleAxisDisplay()">横軸を起床目標時間に合わせる</button>
+        <button id="toggleTargetBtn" class="target-btn active" onclick="toggleTargetDisplay()">目標表示を消す</button>
+        <button id="toggleAxisBtn" class="target-btn active" onclick="toggleAxisDisplay()">横軸を0時基準に戻す</button>
     </div>
 
-    <!-- 3. すべて表示などのフィルター ＋ アクションボタン群 (グラフの上) -->
+    <!-- すべて表示などのフィルター ＋ アクションボタン群 (グラフの下) -->
     <div class="action-bar">
         <select id="rangeFilter" class="filter-select" onchange="applyChartUpdate()">
             <option value="all">📅 すべて表示</option>
             <option value="thisMonth">今月 (月別)</option>
             <option value="thisWeek">今週 (週別)</option>
-            <option value="past7">過去7日間</option>
+            <option value="past7" selected>過去7日間</option>
             <option value="past14">過去14日間</option>
             <option value="past30">過去30日間</option>
         </select>
@@ -410,13 +418,6 @@
         <div class="legend-item"><span class="legend-color" style="background: rgba(54, 162, 235, 0.8);"></span> 6h以下</div>
         <div class="legend-item"><span class="legend-color" style="background: rgba(76, 175, 80, 0.6);"></span> 6〜9h</div>
         <div class="legend-item"><span class="legend-color" style="background: rgba(255, 99, 132, 0.8);"></span> 9h以上</div>
-    </div>
-
-    <!-- グラフエリア -->
-    <div class="chart-container-wrapper">
-        <div class="chart-container">
-            <canvas id="sleepChart"></canvas>
-        </div>
     </div>
 
     <!-- 統計セクション -->
@@ -463,8 +464,9 @@
 </div>
 
 <script>
-    let isTargetVisible = false;
-    let isAxisShifted = false;
+    // デフォルトで目標表示・軸シフトを有効化
+    let isTargetVisible = true;
+    let isAxisShifted = true;
     let currentDailyTotals = {};
     let currentDayNightReversed = {};
 
@@ -579,89 +581,101 @@
         const today0 = new Date();
         today0.setHours(0,0,0,0);
         
-        let filterStart = new Date('1970-01-01T00:00:00');
-        let filterEnd = new Date('2999-12-31T00:00:00');
-
-        if (filterType === 'thisMonth') {
-            filterStart = new Date(today0.getFullYear(), today0.getMonth(), 1);
-            filterEnd = new Date(today0.getFullYear(), today0.getMonth() + 1, 0);
+        // 期間選択に応じて最初から日付枠を正確に生成する（5日になるバグの修正）
+        if (filterType === 'past7' || filterType === 'past14' || filterType === 'past30') {
+            const daysCount = filterType === 'past7' ? 7 : (filterType === 'past14' ? 14 : 30);
+            for (let i = daysCount - 1; i >= 0; i--) {
+                const d = new Date(today0);
+                d.setDate(today0.getDate() - i);
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                dateSet.add(`${y}-${m}-${dd}`);
+            }
+        } else if (filterType === 'thisMonth') {
+            const year = today0.getFullYear();
+            const month = today0.getMonth();
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            for (let day = 1; day <= lastDay; day++) {
+                const m = String(month + 1).padStart(2, '0');
+                const dd = String(day).padStart(2, '0');
+                dateSet.add(`${year}-${m}-${dd}`);
+            }
         } else if (filterType === 'thisWeek') {
             const day = today0.getDay();
             const diff = today0.getDate() - day + (day === 0 ? -6 : 1);
-            filterStart = new Date(today0);
-            filterStart.setDate(diff);
-            filterEnd = new Date(filterStart);
-            filterEnd.setDate(filterEnd.getDate() + 6);
-        } else if (filterType === 'past7') {
-            filterStart = new Date(today0);
-            filterStart.setDate(today0.getDate() - 6);
-            filterEnd = new Date(today0);
-        } else if (filterType === 'past14') {
-            filterStart = new Date(today0);
-            filterStart.setDate(today0.getDate() - 13);
-            filterEnd = new Date(today0);
-        } else if (filterType === 'past30') {
-            filterStart = new Date(today0);
-            filterStart.setDate(today0.getDate() - 29);
-            filterEnd = new Date(today0);
+            const monday = new Date(today0);
+            monday.setDate(diff);
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                if (d <= new Date()) {
+                    const y = d.getFullYear();
+                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                    const dd = String(d.getDate()).padStart(2, '0');
+                    dateSet.add(`${y}-${m}-${dd}`);
+                }
+            }
+        } else {
+            // allの場合は既存データの論理日をすべて拾う
+            sleepData.forEach(d => {
+                const sTime = new Date(`${d.startDate}T${d.start}:00`).getTime();
+                const logicalStart = new Date(sTime - offsetMs);
+                const y = logicalStart.getFullYear();
+                const m = String(logicalStart.getMonth() + 1).padStart(2, '0');
+                const dd = String(logicalStart.getDate()).padStart(2, '0');
+                dateSet.add(`${y}-${m}-${dd}`);
+            });
+            if (dateSet.size === 0) {
+                const y = today0.getFullYear();
+                const m = String(today0.getMonth() + 1).padStart(2, '0');
+                const dd = String(today0.getDate()).padStart(2, '0');
+                dateSet.add(`${y}-${m}-${dd}`);
+            }
         }
+
+        const sortedDates = Array.from(dateSet).sort();
 
         sleepData.forEach(d => {
             const sTime = new Date(`${d.startDate}T${d.start}:00`).getTime();
             const eTime = new Date(`${d.endDate}T${d.end}:00`).getTime();
 
-            const logicalStart = new Date(sTime - offsetMs);
-            const logicalEnd = new Date(eTime - offsetMs);
+            sortedDates.forEach(curStr => {
+                const cur = new Date(curStr + 'T00:00:00');
+                const L_start_time = cur.getTime() + offsetMs;
+                const L_end_time = L_start_time + 24 * 3600 * 1000;
 
-            const formatDate = (dateObj) => {
-                const y = dateObj.getFullYear();
-                const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-                const dd = String(dateObj.getDate()).padStart(2, '0');
-                return `${y}-${m}-${dd}`;
-            };
+                const block_s = Math.max(sTime, L_start_time);
+                const block_e = Math.min(eTime, L_end_time);
 
-            let cur = new Date(logicalStart.getFullYear(), logicalStart.getMonth(), logicalStart.getDate());
-            let end = new Date(logicalEnd.getFullYear(), logicalEnd.getMonth(), logicalEnd.getDate());
+                if (block_s < block_e) {
+                    const duration = (block_e - block_s) / 3600000;
+                    const x1 = axisOffset + (block_s - L_start_time) / 3600000;
+                    const x2 = axisOffset + (block_e - L_start_time) / 3600000;
+                    
+                    data.push({ x: [x1, x2], y: curStr, record: d });
+                    dailyTotals[curStr] = (dailyTotals[curStr] || 0) + duration;
 
-            while (cur <= end) {
-                if (cur >= filterStart && cur <= filterEnd) {
-                    const curStr = formatDate(cur);
-                    dateSet.add(curStr);
-
-                    const L_start_time = cur.getTime() + offsetMs;
-                    const L_end_time = L_start_time + 24 * 3600 * 1000;
-
-                    const block_s = Math.max(sTime, L_start_time);
-                    const block_e = Math.min(eTime, L_end_time);
-
-                    if (block_s < block_e) {
-                        const duration = (block_e - block_s) / 3600000;
-                        const x1 = axisOffset + (block_s - L_start_time) / 3600000;
-                        const x2 = axisOffset + (block_e - L_start_time) / 3600000;
-                        
-                        data.push({ x: [x1, x2], y: curStr, record: d });
-                        dailyTotals[curStr] = (dailyTotals[curStr] || 0) + duration;
-
-                        const actual_nineAM = cur.getTime() + 9 * 3600 * 1000;
-                        const actual_fivePM = cur.getTime() + 17 * 3600 * 1000;
-                        if (Math.max(block_s, actual_nineAM) < Math.min(block_e, actual_fivePM)) {
-                            dayNightReversed[curStr] = true;
-                        }
+                    const actual_nineAM = cur.getTime() + 9 * 3600 * 1000;
+                    const actual_fivePM = cur.getTime() + 17 * 3600 * 1000;
+                    if (Math.max(block_s, actual_nineAM) < Math.min(block_e, actual_fivePM)) {
+                        dayNightReversed[curStr] = true;
                     }
                 }
-                cur.setDate(cur.getDate() + 1);
-            }
+            });
         });
 
         return {
-            labels: Array.from(dateSet).sort(),
+            labels: sortedDates,
             data: data,
             dailyTotals: dailyTotals,
             dayNightReversed: dayNightReversed
         };
     }
 
-    const chartInit = updateChartData(0);
+    // 初期化時の軸オフセット（デフォルトで起床目標時間＝targetEndInputの6:00に合わせる）
+    const initialAxisOffset = timeToDecimal('06:00');
+    const chartInit = updateChartData(initialAxisOffset);
     currentDailyTotals = chartInit.dailyTotals;
     currentDayNightReversed = chartInit.dayNightReversed;
     const ctx = document.getElementById('sleepChart').getContext('2d');
@@ -701,8 +715,8 @@
             scales: {
                 x: {
                     type: 'linear',
-                    min: 0,
-                    max: 24,
+                    min: initialAxisOffset,
+                    max: initialAxisOffset + 24,
                     title: { display: true, text: '時刻' },
                     ticks: {
                         stepSize: 2,
@@ -754,11 +768,11 @@
                     color: '#ffffff',
                 },
                 targetSleep: {
-                    showTarget: false,
+                    showTarget: true, // デフォルトで有効
                     startH: 22,
                     endH: 6,
-                    axisMin: 0,
-                    axisMax: 24
+                    axisMin: initialAxisOffset,
+                    axisMax: initialAxisOffset + 24
                 }
             }
         }
@@ -985,7 +999,7 @@
             const sDate = d.startDate.replace(/-/g, '/');
             const eDate = d.endDate.replace(/-/g, '/');
             const text = document.createElement('span');
-            text.textContent = `${sDate} ${d.start} 〜 ${eDate} ${d.end} (${d.hours.toFixed(1)}時間)`;
+            text.textContent = `${sDate} ${d.start} 〜 ${eDate} ${d.end} (${d.hours.toFixed(1)}시간)`;
             const delBtn = document.createElement('button');
             delBtn.textContent = '削除';
             delBtn.className = 'btn-danger btn-small';
@@ -1066,17 +1080,30 @@
         link.click();
     }
 
-    function tweetChart() {
-        downloadImage();
+    async function tweetChart() {
+        const canvas = document.getElementById('sleepChart');
         const pageUrl = window.location.href;
         const textStr = `私の睡眠記録グラフです！📊\n#睡眠記録アプリ #睡眠改善\n${pageUrl}`;
         
-        alert('グラフ画像をダウンロードしました。\n開いたX（Twitter）の投稿画面に画像を添付してポストしてください。');
-        const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(textStr)}`;
-        window.open(url, '_blank');
+        if (navigator.share) {
+            canvas.toBlob(async (blob) => {
+                const file = new File([blob], 'sleep_chart.png', { type: 'image/png' });
+                try {
+                    await navigator.share({
+                        text: textStr,
+                        files: [file]
+                    });
+                } catch (err) {}
+            });
+        } else {
+            downloadImage();
+            alert('画像をダウンロードしました。\nポスト画面に手動で画像を添付してシェアしてください。');
+            const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(textStr)}`;
+            window.open(url, '_blank');
+        }
     }
 
-    function tweetMisfitScore() {
+    async function tweetMisfitScore() {
         const score = document.getElementById('misfitScore').innerText;
         const detail = document.getElementById('misfitDetail').innerText;
         const pageUrl = window.location.href;

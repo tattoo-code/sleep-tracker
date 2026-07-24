@@ -14,7 +14,7 @@
             color: #333;
         }
         .container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
             background: #fff;
             padding: 20px;
@@ -164,7 +164,8 @@
             border-top: 1px solid #eee;
             padding-top: 20px;
         }
-        @media (max-width: 600px) { .stats-section { flex-direction: column; } }
+        @media (max-width: 800px) { .stats-section { flex-direction: column; } }
+        
         .stat-card {
             flex: 1;
             background: #f0f7ff;
@@ -178,6 +179,7 @@
             border-bottom: 2px solid #b3d4ff;
             padding-bottom: 8px;
             color: #0056b3;
+            text-align: center;
         }
         .stat-list {
             list-style: none;
@@ -258,8 +260,8 @@
         
         <button onclick="openSaveModal()" class="btn-outline">💾 セーブコード発行</button>
         <button onclick="openLoadModal()" class="btn-outline">📁 コードでロード</button>
-        <button onclick="downloadImage()" class="btn-outline">📷 画像保存</button>
-        <button onclick="tweetChart()" class="btn-x">𝕏 ポスト</button>
+        <button onclick="downloadImage()" class="btn-outline">📷 グラフ画像保存</button>
+        <button onclick="tweetChart()" class="btn-x">𝕏 グラフをポスト</button>
     </div>
     
     <div class="input-group">
@@ -300,12 +302,19 @@
     </div>
 
     <div class="stats-section">
+        <!-- 社会不適合者度セクション (ボタン追加) -->
+        <div class="stat-card" style="background: #fff8f8; border-color: #ffcdd2; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <h3 style="color: #c62828; width: 100%; border-bottom: 2px solid #ffcdd2;">⚠️ 社会不適合者度</h3>
+            <div id="misfitScore" style="font-size: 2.5rem; font-weight: bold; text-align: center; margin-top: 10px;">0%</div>
+            <div id="misfitDetail" style="text-align: center; font-size: 0.9rem; color: #555; margin-top: 5px; margin-bottom: 15px;">(昼夜逆転 0日 / 記録 0日)</div>
+            <button onclick="tweetMisfitScore()" class="btn-x" style="padding: 8px 16px; font-size: 0.9rem;">𝕏 結果をポスト</button>
+        </div>
         <div class="stat-card">
             <h3>日別 合計睡眠時間</h3>
             <ul class="stat-list" id="dailyStatsList"></ul>
         </div>
         <div class="stat-card">
-            <h3>週別 合計と平均 (月曜始まり)</h3>
+            <h3>週別 合計と平均 (月曜)</h3>
             <ul class="stat-list" id="weeklyStatsList"></ul>
         </div>
     </div>
@@ -753,6 +762,28 @@
         const weeklyStats = {};
         const sortedDates = Object.keys(currentDailyTotals).sort();
 
+        // 社会不適合者度の計算
+        const totalDays = sortedDates.length;
+        const reversedDays = Object.keys(currentDayNightReversed).length;
+        let misfitPercentage = 0;
+        if (totalDays > 0) {
+            misfitPercentage = Math.round((reversedDays / totalDays) * 100);
+        }
+
+        const scoreEl = document.getElementById('misfitScore');
+        scoreEl.innerText = `${misfitPercentage}％`;
+        document.getElementById('misfitDetail').innerText = `(昼夜逆転 ${reversedDays}日 / 記録 ${totalDays}日)`;
+
+        // パーセンテージで色を変更
+        if (misfitPercentage < 20) {
+            scoreEl.style.color = '#2e7d32'; // 緑
+        } else if (misfitPercentage < 50) {
+            scoreEl.style.color = '#FF9800'; // オレンジ
+        } else {
+            scoreEl.style.color = '#c62828'; // 赤
+        }
+
+        // 日別・週別の計算と描画
         sortedDates.forEach(dateStr => {
             const d = new Date(dateStr);
             const day = d.getDay();
@@ -845,14 +876,11 @@
         });
     }
 
-    // --- セーブデータ用コードの処理 ---
-
     function openSaveModal() {
         if (sleepData.length === 0) {
             alert('保存するデータがありません。');
             return;
         }
-        // データをBase64エンコードして文字列コード化
         const code = btoa(encodeURIComponent(JSON.stringify(sleepData)));
         
         document.getElementById('codeModalTitle').innerText = '💾 セーブデータを発行';
@@ -888,7 +916,6 @@
                 return;
             }
             try {
-                // Base64コードをデコードしてJSONパース
                 const imported = JSON.parse(decodeURIComponent(atob(code)));
                 if (Array.isArray(imported)) {
                     if (confirm('現在のデータを上書きして復元しますか？')) {
@@ -912,8 +939,6 @@
         document.getElementById('codeModal').style.display = 'none';
     }
 
-    // --- 共有機能 ---
-
     function downloadImage() {
         const link = document.createElement('a');
         link.download = 'sleep_chart.png';
@@ -921,29 +946,30 @@
         link.click();
     }
 
-    async function tweetChart() {
-        const canvas = document.getElementById('sleepChart');
-        const pageUrl = window.location.href; // 現在のページのURLを取得
+    function tweetChart() {
+        // 画像をダウンロード
+        downloadImage();
+        
+        // ツイート用の文章とURL
+        const pageUrl = window.location.href;
         const textStr = `私の睡眠記録グラフです！📊\n#睡眠記録アプリ #睡眠改善\n${pageUrl}`;
         
-        if (navigator.share) {
-            // スマホ等Web Share API対応ブラウザの場合は画像も合わせて渡す
-            canvas.toBlob(async (blob) => {
-                const file = new File([blob], 'sleep_chart.png', { type: 'image/png' });
-                try {
-                    await navigator.share({
-                        text: textStr,
-                        files: [file]
-                    });
-                } catch (err) {}
-            });
-        } else {
-            // PC等の場合は画像をダウンロード後、テキストとURL入りのツイート画面を開く
-            downloadImage();
-            alert('画像をダウンロードしました。\nポスト画面に手動で画像を添付してシェアしてください。');
-            const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(textStr)}`;
-            window.open(url, '_blank');
-        }
+        // 案内用のアラート
+        alert('グラフ画像をダウンロードしました！\n開いたX（Twitter）の投稿画面に、ダウンロードした画像を添付してポストしてください。');
+        
+        // 直接Xの投稿画面を開く
+        const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(textStr)}`;
+        window.open(url, '_blank');
+    }
+
+    // 追加: 社会不適合者度を専用テキストでポストする関数
+    function tweetMisfitScore() {
+        const score = document.getElementById('misfitScore').innerText;
+        const pageUrl = window.location.href;
+        const textStr = `私の睡眠社不度は${score}でした！\n#睡眠記録アプリ\n${pageUrl}`;
+        
+        const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(textStr)}`;
+        window.open(url, '_blank');
     }
 
     // 初回描画

@@ -26,6 +26,28 @@
             font-size: 1.5rem;
             margin-bottom: 20px;
         }
+        .action-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .filter-select {
+            padding: 10px;
+            border: 2px solid #4CAF50;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #2e7d32;
+            cursor: pointer;
+            background: #fff;
+        }
         .input-group {
             display: flex;
             gap: 10px;
@@ -34,7 +56,7 @@
             justify-content: center;
             align-items: center;
         }
-        input {
+        input[type="date"], input[type="time"], input[type="text"], input[type="password"] {
             padding: 8px;
             border: 1px solid #ccc;
             border-radius: 4px;
@@ -54,26 +76,33 @@
             color: #555;
             margin-right: 5px;
         }
-        button {
-            padding: 10px 20px;
+        button, .btn-label {
+            padding: 10px 15px;
             background-color: #4CAF50;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 1rem;
-            transition: background-color 0.3s;
+            font-size: 0.95rem;
+            transition: opacity 0.3s;
+            display: inline-block;
+            text-align: center;
         }
-        button:hover {
-            background-color: #45a049;
+        button:hover, .btn-label:hover { opacity: 0.8; }
+        .btn-danger { background-color: #f44336; }
+        .btn-outline {
+            background-color: #fff;
+            color: #555;
+            border: 1px solid #ccc;
         }
-        .btn-danger {
-            background-color: #f44336;
+        .btn-cloud {
+            background-color: #2196F3;
+            color: white;
         }
-        .btn-danger:hover {
-            background-color: #d32f2f;
+        .btn-x {
+            background-color: #0f1419;
+            color: white;
         }
-        
         .target-setting-group {
             display: flex;
             justify-content: center;
@@ -90,25 +119,15 @@
             font-weight: bold;
             color: #2e7d32;
         }
-        .btn-outline {
+        .target-btn {
             background-color: #fff;
             color: #2e7d32;
             border: 2px solid #4CAF50;
             padding: 8px 16px;
         }
-        .btn-outline.active {
+        .target-btn.active {
             background-color: #4CAF50;
             color: white;
-        }
-        .btn-outline:hover {
-            background-color: #e8f5e9;
-        }
-        .btn-outline.active:hover {
-            background-color: #45a049;
-        }
-        .btn-small {
-            padding: 5px 10px;
-            font-size: 0.85rem;
         }
         .legend-container {
             display: flex;
@@ -118,23 +137,32 @@
             font-size: 0.9rem;
             flex-wrap: wrap;
         }
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
+        .legend-item { display: flex; align-items: center; gap: 4px; }
         .legend-color {
             display: inline-block;
             width: 14px;
             height: 14px;
             border-radius: 3px;
         }
+        
+        /* グラフをスクロール可能にするためのラッパー */
+        .chart-container-wrapper {
+            width: 100%;
+            max-height: 60vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fff;
+        }
         .chart-container {
             position: relative;
-            height: 60vh;
             width: 100%;
-            margin-bottom: 20px;
+            background: #fff;
+            /* 高さはJSで動的に設定されます */
         }
+
         .stats-section {
             display: flex;
             gap: 20px;
@@ -142,11 +170,7 @@
             border-top: 1px solid #eee;
             padding-top: 20px;
         }
-        @media (max-width: 600px) {
-            .stats-section {
-                flex-direction: column;
-            }
-        }
+        @media (max-width: 600px) { .stats-section { flex-direction: column; } }
         .stat-card {
             flex: 1;
             background: #f0f7ff;
@@ -172,17 +196,11 @@
             padding: 8px 0;
             border-bottom: 1px dashed #ccc;
         }
-        .stat-list li:last-child {
-            border-bottom: none;
-        }
+        .stat-list li:last-child { border-bottom: none; }
         .history-section {
             margin-top: 20px;
             border-top: 1px solid #eee;
             padding-top: 20px;
-        }
-        .history-section h2 {
-            font-size: 1.2rem;
-            margin-bottom: 15px;
         }
         .history-list {
             list-style: none;
@@ -200,34 +218,72 @@
             border-radius: 4px;
             border: 1px solid #eaeaea;
         }
-        @media (max-width: 600px) {
-            .history-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-            .history-item button {
-                align-self: flex-end;
-            }
+
+        /* モーダルのスタイル */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
         }
+        .modal-content {
+            background: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .modal-close {
+            float: right;
+            cursor: pointer;
+            font-size: 1.5rem;
+            line-height: 1;
+            color: #555;
+        }
+        .modal-close:hover { color: #000; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>睡眠時間記録</h1>
+
+    <!-- アクション＆フィルタリングバー -->
+    <div class="action-bar">
+        <select id="rangeFilter" class="filter-select" onchange="applyChartUpdate()">
+            <option value="all">📅 すべて表示</option>
+            <option value="thisMonth">今月 (月別)</option>
+            <option value="thisWeek">今週 (週別)</option>
+            <option value="past7">過去7日間</option>
+            <option value="past14">過去14日間</option>
+            <option value="past30">過去30日間</option>
+        </select>
+        
+        <button onclick="openCloudModal()" class="btn-cloud">☁️ クラウド同期</button>
+        <button onclick="exportData()" class="btn-outline">💾 バックアップ保存</button>
+        <label class="btn-outline btn-label">
+            📁 復元
+            <input type="file" id="importInput" accept=".json" style="display:none;" onchange="importData(event)">
+        </label>
+        <button onclick="downloadImage()" class="btn-outline">📷 画像保存</button>
+        <button onclick="tweetChart()" class="btn-x">𝕏 ポスト</button>
+    </div>
     
     <div class="input-group">
         <div class="time-wrap">
             <label>就寝</label>
-            <input type="date" id="startDateInput" required title="就寝日">
-            <input type="time" id="startTimeInput" required title="就寝時刻">
+            <input type="date" id="startDateInput" required>
+            <input type="time" id="startTimeInput" required>
         </div>
         <span style="font-weight: bold;">〜</span>
         <div class="time-wrap">
             <label>起床</label>
-            <input type="date" id="endDateInput" required title="起床日">
-            <input type="time" id="endTimeInput" required title="起床時刻">
+            <input type="date" id="endDateInput" required>
+            <input type="time" id="endTimeInput" required>
         </div>
         <button onclick="addRecord()">記録する</button>
         <button onclick="clearData()" class="btn-danger">全データクリア</button>
@@ -238,25 +294,21 @@
         <input type="time" id="targetStartInput" value="22:00" onchange="onTargetChange()">
         <span>〜</span>
         <input type="time" id="targetEndInput" value="06:00" onchange="onTargetChange()">
-        <button id="toggleTargetBtn" class="btn-outline" onclick="toggleTargetDisplay()">目標をグラフに表示</button>
-        <button id="toggleAxisBtn" class="btn-outline" onclick="toggleAxisDisplay()">横軸を起床目標時間に合わせる</button>
+        <button id="toggleTargetBtn" class="target-btn" onclick="toggleTargetDisplay()">目標をグラフに表示</button>
+        <button id="toggleAxisBtn" class="target-btn" onclick="toggleAxisDisplay()">横軸を起床目標時間に合わせる</button>
     </div>
 
-    <!-- 色の意味を示す凡例を追加 -->
     <div class="legend-container">
-        <div class="legend-item">
-            <span class="legend-color" style="background: rgba(54, 162, 235, 0.8);"></span> 6時間以下 (不足)
-        </div>
-        <div class="legend-item">
-            <span class="legend-color" style="background: rgba(76, 175, 80, 0.6);"></span> 6〜9時間 (適正)
-        </div>
-        <div class="legend-item">
-            <span class="legend-color" style="background: rgba(255, 99, 132, 0.8);"></span> 9時間以上 (過剰)
-        </div>
+        <div class="legend-item"><span class="legend-color" style="background: rgba(54, 162, 235, 0.8);"></span> 6時間以下 (不足)</div>
+        <div class="legend-item"><span class="legend-color" style="background: rgba(76, 175, 80, 0.6);"></span> 6〜9時間 (適正)</div>
+        <div class="legend-item"><span class="legend-color" style="background: rgba(255, 99, 132, 0.8);"></span> 9時間以上 (過剰)</div>
     </div>
 
-    <div class="chart-container">
-        <canvas id="sleepChart"></canvas>
+    <!-- グラフエリア（スクロール対応） -->
+    <div class="chart-container-wrapper">
+        <div class="chart-container">
+            <canvas id="sleepChart"></canvas>
+        </div>
     </div>
 
     <div class="stats-section">
@@ -276,19 +328,53 @@
     </div>
 </div>
 
+<!-- クラウド同期モーダル -->
+<div id="cloudModal" class="modal-overlay">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeCloudModal()">&times;</span>
+        <h2 style="margin-top:0;">☁️ クラウド同期設定</h2>
+        <p style="font-size: 0.9rem; color: #555; line-height: 1.5;">
+            あなた専用のGitHubの「Gist」機能を使って、データを安全にクラウドへ保存・同期します。<br>
+            <a href="https://github.com/settings/tokens/new?scopes=gist&description=SleepTrackerSync" target="_blank" style="color:#2196F3; font-weight:bold;">こちらをクリック</a>して、ページ一番下の緑色のボタンから Access Token を発行し、下の欄に貼り付けてください。
+        </p>
+        <div style="margin-bottom: 15px;">
+            <label style="display:block; font-weight:bold; margin-bottom:5px;">GitHub Access Token (必須)</label>
+            <input type="password" id="githubToken" style="width: 100%; box-sizing: border-box;" placeholder="ghp_xxxxxxxxxxxxxxx">
+        </div>
+        <div style="margin-bottom: 25px;">
+            <label style="display:block; font-weight:bold; margin-bottom:5px;">Gist ID (初回保存時に自動発行されます)</label>
+            <input type="text" id="gistId" style="width: 100%; box-sizing: border-box; background:#f5f5f5;" placeholder="別端末で復元する際はここに入力">
+            <small style="color:#888;">※このIDをスマホ版に入力するとデータを同期できます。</small>
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button id="saveCloudBtn" onclick="saveToCloud()" style="background-color: #4CAF50; flex:1;">☁️ クラウドへ保存</button>
+            <button id="loadCloudBtn" onclick="loadFromCloud()" style="background-color: #FF9800; flex:1;">☁️ クラウドから復元</button>
+        </div>
+    </div>
+</div>
+
 <script>
-    // 状態管理とグローバルデータ
     let isTargetVisible = false;
     let isAxisShifted = false;
     let currentDailyTotals = {};
     let currentDayNightReversed = {};
 
-    // 目標ハイライト表示用のプラグイン
+    const customCanvasBackgroundColor = {
+        id: 'customCanvasBackgroundColor',
+        beforeDraw: (chart, args, options) => {
+            const {ctx} = chart;
+            ctx.save();
+            ctx.globalCompositeOperation = 'destination-over';
+            ctx.fillStyle = options.color || '#ffffff';
+            ctx.fillRect(0, 0, chart.width, chart.height);
+            ctx.restore();
+        }
+    };
+
     const targetSleepPlugin = {
         id: 'targetSleep',
         beforeDraw(chart, args, options) {
             if (!options.showTarget) return;
-
             const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
             const startH = options.startH;
             const endH = options.endH;
@@ -304,10 +390,8 @@
             for (let k = -1; k <= 1; k++) {
                 let s = startH + k * 24;
                 let e = s + duration;
-                
                 let draw_s = Math.max(s, min);
                 let draw_e = Math.min(e, max);
-                
                 if (draw_s < draw_e) {
                     let x1 = x.getPixelForValue(draw_s);
                     let x2 = x.getPixelForValue(draw_e);
@@ -317,7 +401,7 @@
             ctx.restore();
         }
     };
-    Chart.register(targetSleepPlugin);
+    Chart.register(targetSleepPlugin, customCanvasBackgroundColor);
 
     function timeToDecimal(timeStr) {
         if (!timeStr) return 0;
@@ -325,22 +409,18 @@
         return h + m / 60;
     }
 
-    // 就寝日・時刻が変更された時に、起床日を自動補完する関数
     function autoSetEndDate() {
         const startDVal = document.getElementById('startDateInput').value;
         const startTVal = document.getElementById('startTimeInput').value;
         const endTVal = document.getElementById('endTimeInput').value;
-
         if (!startDVal || !startTVal || !endTVal) return;
 
         let startH = timeToDecimal(startTVal);
         let endH = timeToDecimal(endTVal);
-
         let dateObj = new Date(startDVal);
         if (endH <= startH) {
             dateObj.setDate(dateObj.getDate() + 1);
         }
-        
         document.getElementById('endDateInput').value = dateObj.toISOString().split('T')[0];
     }
 
@@ -351,7 +431,6 @@
     const now = new Date();
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
-
     document.getElementById('startDateInput').value = yesterday.toISOString().split('T')[0];
     document.getElementById('startTimeInput').value = '23:00';
     document.getElementById('endTimeInput').value = '07:00';
@@ -380,13 +459,43 @@
         };
     });
 
-    // グラフデータ、日別合計、昼夜逆転判定をまとめて生成する関数
     function updateChartData(axisOffset) {
         const dateSet = new Set();
         const data = [];
         const dailyTotals = {};
         const dayNightReversed = {};
         const offsetMs = axisOffset * 3600 * 1000;
+
+        const filterType = document.getElementById('rangeFilter').value;
+        const today0 = new Date();
+        today0.setHours(0,0,0,0);
+        
+        let filterStart = new Date('1970-01-01T00:00:00');
+        let filterEnd = new Date('2999-12-31T00:00:00');
+
+        if (filterType === 'thisMonth') {
+            filterStart = new Date(today0.getFullYear(), today0.getMonth(), 1);
+            filterEnd = new Date(today0.getFullYear(), today0.getMonth() + 1, 0);
+        } else if (filterType === 'thisWeek') {
+            const day = today0.getDay();
+            const diff = today0.getDate() - day + (day === 0 ? -6 : 1);
+            filterStart = new Date(today0);
+            filterStart.setDate(diff);
+            filterEnd = new Date(filterStart);
+            filterEnd.setDate(filterEnd.getDate() + 6);
+        } else if (filterType === 'past7') {
+            filterStart = new Date(today0);
+            filterStart.setDate(today0.getDate() - 6);
+            filterEnd = new Date(today0);
+        } else if (filterType === 'past14') {
+            filterStart = new Date(today0);
+            filterStart.setDate(today0.getDate() - 13);
+            filterEnd = new Date(today0);
+        } else if (filterType === 'past30') {
+            filterStart = new Date(today0);
+            filterStart.setDate(today0.getDate() - 29);
+            filterEnd = new Date(today0);
+        }
 
         sleepData.forEach(d => {
             const sTime = new Date(`${d.startDate}T${d.start}:00`).getTime();
@@ -406,28 +515,29 @@
             let end = new Date(logicalEnd.getFullYear(), logicalEnd.getMonth(), logicalEnd.getDate());
 
             while (cur <= end) {
-                const curStr = formatDate(cur);
-                dateSet.add(curStr);
+                if (cur >= filterStart && cur <= filterEnd) {
+                    const curStr = formatDate(cur);
+                    dateSet.add(curStr);
 
-                const L_start_time = cur.getTime() + offsetMs;
-                const L_end_time = L_start_time + 24 * 3600 * 1000;
+                    const L_start_time = cur.getTime() + offsetMs;
+                    const L_end_time = L_start_time + 24 * 3600 * 1000;
 
-                const block_s = Math.max(sTime, L_start_time);
-                const block_e = Math.min(eTime, L_end_time);
+                    const block_s = Math.max(sTime, L_start_time);
+                    const block_e = Math.min(eTime, L_end_time);
 
-                if (block_s < block_e) {
-                    const duration = (block_e - block_s) / 3600000;
-                    const x1 = axisOffset + (block_s - L_start_time) / 3600000;
-                    const x2 = axisOffset + (block_e - L_start_time) / 3600000;
-                    
-                    data.push({ x: [x1, x2], y: curStr, record: d });
-                    dailyTotals[curStr] = (dailyTotals[curStr] || 0) + duration;
+                    if (block_s < block_e) {
+                        const duration = (block_e - block_s) / 3600000;
+                        const x1 = axisOffset + (block_s - L_start_time) / 3600000;
+                        const x2 = axisOffset + (block_e - L_start_time) / 3600000;
+                        
+                        data.push({ x: [x1, x2], y: curStr, record: d });
+                        dailyTotals[curStr] = (dailyTotals[curStr] || 0) + duration;
 
-                    // ★昼夜逆転判定 (9:00〜17:00の間に睡眠が重なっているか)
-                    const actual_nineAM = cur.getTime() + 9 * 3600 * 1000;
-                    const actual_fivePM = cur.getTime() + 17 * 3600 * 1000;
-                    if (Math.max(block_s, actual_nineAM) < Math.min(block_e, actual_fivePM)) {
-                        dayNightReversed[curStr] = true;
+                        const actual_nineAM = cur.getTime() + 9 * 3600 * 1000;
+                        const actual_fivePM = cur.getTime() + 17 * 3600 * 1000;
+                        if (Math.max(block_s, actual_nineAM) < Math.min(block_e, actual_fivePM)) {
+                            dayNightReversed[curStr] = true;
+                        }
                     }
                 }
                 cur.setDate(cur.getDate() + 1);
@@ -445,7 +555,6 @@
     const chartInit = updateChartData(0);
     currentDailyTotals = chartInit.dailyTotals;
     currentDayNightReversed = chartInit.dayNightReversed;
-
     const ctx = document.getElementById('sleepChart').getContext('2d');
     
     let sleepChart = new Chart(ctx, {
@@ -455,14 +564,13 @@
             datasets: [{
                 label: '睡眠時間',
                 data: chartInit.data,
-                // ★睡眠時間の合計によって色を変更
                 backgroundColor: function(context) {
                     if (!context.raw) return 'rgba(76, 175, 80, 0.6)';
                     const dateStr = context.raw.y;
                     const total = currentDailyTotals[dateStr] || 0;
-                    if (total <= 6) return 'rgba(54, 162, 235, 0.8)'; // 青 (6時間以下)
-                    if (total >= 9) return 'rgba(255, 99, 132, 0.8)'; // 赤 (9時間以上)
-                    return 'rgba(76, 175, 80, 0.6)'; // 緑 (適正)
+                    if (total <= 6) return 'rgba(54, 162, 235, 0.8)';
+                    if (total >= 9) return 'rgba(255, 99, 132, 0.8)';
+                    return 'rgba(76, 175, 80, 0.6)';
                 },
                 borderColor: function(context) {
                     if (!context.raw) return 'rgba(76, 175, 80, 1)';
@@ -503,7 +611,7 @@
                     type: 'category',
                     title: { display: true, text: '日付' },
                     ticks: {
-                        // ★ラベルに昼夜逆転を表示
+                        autoSkip: false, // ★縦軸のラベルを省略せず全て表示
                         callback: function(value, index, ticks) {
                             const dateStr = this.getLabelForValue(value);
                             if (currentDayNightReversed[dateStr]) {
@@ -511,13 +619,10 @@
                             }
                             return dateStr;
                         },
-                        // ★昼夜逆転の日の文字色を赤にする
                         color: function(context) {
                             if (context.chart.data.labels) {
                                 const dateStr = context.chart.data.labels[context.index];
-                                if (currentDayNightReversed[dateStr]) {
-                                    return '#d32f2f'; // 警告色
-                                }
+                                if (currentDayNightReversed[dateStr]) return '#d32f2f';
                             }
                             return '#666';
                         }
@@ -536,6 +641,9 @@
                         }
                     }
                 },
+                customCanvasBackgroundColor: {
+                    color: '#ffffff',
+                },
                 targetSleep: {
                     showTarget: false,
                     startH: 22,
@@ -546,6 +654,36 @@
             }
         }
     });
+
+    // グラフ更新とコンテナ高さの自動調整
+    function applyChartUpdate() {
+        const axisOffset = isAxisShifted ? timeToDecimal(document.getElementById('targetEndInput').value) : 0;
+        const updated = updateChartData(axisOffset);
+        
+        currentDailyTotals = updated.dailyTotals;
+        currentDayNightReversed = updated.dayNightReversed;
+
+        // ★データ量に応じてグラフの高さを動的に調整し、潰れを防ぐ
+        const chartContainer = document.querySelector('.chart-container');
+        const labelCount = updated.labels.length;
+        const newHeight = Math.max(400, labelCount * 30 + 100); 
+        chartContainer.style.height = newHeight + 'px';
+
+        sleepChart.data.labels = updated.labels;
+        sleepChart.data.datasets[0].data = updated.data;
+        
+        sleepChart.options.scales.x.min = axisOffset;
+        sleepChart.options.scales.x.max = axisOffset + 24;
+        
+        sleepChart.options.plugins.targetSleep.showTarget = isTargetVisible;
+        sleepChart.options.plugins.targetSleep.startH = timeToDecimal(document.getElementById('targetStartInput').value);
+        sleepChart.options.plugins.targetSleep.endH = timeToDecimal(document.getElementById('targetEndInput').value);
+        sleepChart.options.plugins.targetSleep.axisMin = axisOffset;
+        sleepChart.options.plugins.targetSleep.axisMax = axisOffset + 24;
+        
+        sleepChart.update();
+        renderStats();
+    }
 
     function toggleTargetDisplay() {
         isTargetVisible = !isTargetVisible;
@@ -577,29 +715,6 @@
         if (isTargetVisible || isAxisShifted) {
             applyChartUpdate();
         }
-    }
-
-    function applyChartUpdate() {
-        const axisOffset = isAxisShifted ? timeToDecimal(document.getElementById('targetEndInput').value) : 0;
-        const updated = updateChartData(axisOffset);
-        
-        currentDailyTotals = updated.dailyTotals;
-        currentDayNightReversed = updated.dayNightReversed;
-
-        sleepChart.data.labels = updated.labels;
-        sleepChart.data.datasets[0].data = updated.data;
-        
-        sleepChart.options.scales.x.min = axisOffset;
-        sleepChart.options.scales.x.max = axisOffset + 24;
-        
-        sleepChart.options.plugins.targetSleep.showTarget = isTargetVisible;
-        sleepChart.options.plugins.targetSleep.startH = timeToDecimal(document.getElementById('targetStartInput').value);
-        sleepChart.options.plugins.targetSleep.endH = timeToDecimal(document.getElementById('targetEndInput').value);
-        sleepChart.options.plugins.targetSleep.axisMin = axisOffset;
-        sleepChart.options.plugins.targetSleep.axisMax = axisOffset + 24;
-        
-        sleepChart.update();
-        renderStats();
     }
 
     function calculateHours(startD, startT, endD, endT) {
@@ -656,7 +771,6 @@
     function saveAndRender() {
         sleepData.sort((a, b) => new Date(`${a.startDate}T${a.start}:00`) - new Date(`${b.startDate}T${b.start}:00`));
         localStorage.setItem('sleepData', JSON.stringify(sleepData));
-        
         applyChartUpdate();
         renderHistory();
     }
@@ -694,16 +808,15 @@
             li.style.display = 'flex';
             li.style.justifyContent = 'space-between';
             
-            // ★日別のリストにも昼夜逆転と色を反映
             let warningHtml = '';
             if (currentDayNightReversed[dateStr]) {
                 warningHtml = `<span style="color: #d32f2f; font-size: 0.8rem; margin-left: 8px; font-weight: bold;">⚠昼夜逆転</span>`;
             }
             
             const total = currentDailyTotals[dateStr];
-            let timeColor = '#2e7d32'; // デフォルト(緑)
-            if (total <= 6) timeColor = '#1976d2'; // 青
-            if (total >= 9) timeColor = '#d32f2f'; // 赤
+            let timeColor = '#2e7d32';
+            if (total <= 6) timeColor = '#1976d2';
+            if (total >= 9) timeColor = '#d32f2f';
             
             li.innerHTML = `<span>${dateStr.replace(/-/g, '/')} ${warningHtml}</span> <strong style="color: ${timeColor};">${total.toFixed(1)} 時間</strong>`;
             dailyList.appendChild(li);
@@ -735,34 +848,222 @@
     function renderHistory() {
         const list = document.getElementById('historyList');
         list.innerHTML = '';
-        
         if (sleepData.length === 0) {
             list.innerHTML = '<li>記録がありません。</li>';
             return;
         }
-
         const reversedData = [...sleepData].reverse();
         reversedData.forEach(d => {
             const li = document.createElement('li');
             li.className = 'history-item';
-            
             const sDate = d.startDate.replace(/-/g, '/');
             const eDate = d.endDate.replace(/-/g, '/');
             const text = document.createElement('span');
             text.textContent = `${sDate} ${d.start} 〜 ${eDate} ${d.end} (${d.hours.toFixed(1)}時間)`;
-            
             const delBtn = document.createElement('button');
             delBtn.textContent = '削除';
             delBtn.className = 'btn-danger btn-small';
+            delBtn.style.padding = '5px 10px';
             delBtn.onclick = () => deleteRecord(d.id);
-            
             li.appendChild(text);
             li.appendChild(delBtn);
             list.appendChild(li);
         });
     }
 
-    renderStats();
+    function exportData() {
+        if (sleepData.length === 0) {
+            alert('保存するデータがありません。');
+            return;
+        }
+        const dataStr = JSON.stringify(sleepData);
+        const blob = new Blob([dataStr], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'sleep_tracker_data.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (Array.isArray(imported)) {
+                    if (confirm('現在のデータを上書きして復元しますか？')) {
+                        sleepData = imported;
+                        saveAndRender();
+                        alert('データを復元しました。');
+                    }
+                } else {
+                    alert('正しいデータファイルではありません。');
+                }
+            } catch (err) {
+                alert('データの読み込みに失敗しました。');
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+
+    function downloadImage() {
+        const link = document.createElement('a');
+        link.download = 'sleep_chart.png';
+        link.href = document.getElementById('sleepChart').toDataURL('image/png');
+        link.click();
+    }
+
+    async function tweetChart() {
+        const canvas = document.getElementById('sleepChart');
+        const textStr = '私の睡眠記録グラフです！📊\n#睡眠記録アプリ #睡眠改善\n\n';
+        
+        if (navigator.share) {
+            canvas.toBlob(async (blob) => {
+                const file = new File([blob], 'sleep_chart.png', { type: 'image/png' });
+                try {
+                    await navigator.share({
+                        title: '睡眠時間記録',
+                        text: textStr,
+                        files: [file]
+                    });
+                } catch (err) {}
+            });
+        } else {
+            downloadImage();
+            alert('画像をダウンロードしました。\nポスト画面に手動で画像を添付してシェアしてください。');
+            const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(textStr)}`;
+            window.open(url, '_blank');
+        }
+    }
+
+    // --- GitHub Gistを利用したクラウド同期機能 ---
+    const GITHUB_API = 'https://api.github.com/gists';
+
+    function openCloudModal() {
+        document.getElementById('githubToken').value = localStorage.getItem('githubToken') || '';
+        document.getElementById('gistId').value = localStorage.getItem('gistId') || '';
+        document.getElementById('cloudModal').style.display = 'flex';
+    }
+
+    function closeCloudModal() {
+        document.getElementById('cloudModal').style.display = 'none';
+    }
+
+    async function saveToCloud() {
+        const token = document.getElementById('githubToken').value.trim();
+        let gistId = document.getElementById('gistId').value.trim();
+
+        if (!token) {
+            alert('GitHub Access Tokenを入力してください。');
+            return;
+        }
+
+        const data = JSON.stringify(sleepData);
+        const body = {
+            description: "Sleep Tracker Data",
+            public: false, // データを非公開で作成
+            files: {
+                "sleep_data.json": { content: data }
+            }
+        };
+
+        const headers = {
+            'Authorization': `token ${token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+        };
+
+        try {
+            const btn = document.getElementById('saveCloudBtn');
+            btn.textContent = '保存中...';
+            btn.disabled = true;
+
+            let response;
+            if (gistId) {
+                // 既存のGistを更新
+                response = await fetch(`${GITHUB_API}/${gistId}`, {
+                    method: 'PATCH',
+                    headers: headers,
+                    body: JSON.stringify(body)
+                });
+            } else {
+                // 新規作成
+                response = await fetch(GITHUB_API, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(body)
+                });
+            }
+
+            if (!response.ok) throw new Error('API Error');
+            const result = await response.json();
+            
+            if (!gistId) {
+                gistId = result.id;
+                document.getElementById('gistId').value = gistId;
+            }
+            
+            localStorage.setItem('githubToken', token);
+            localStorage.setItem('gistId', gistId);
+            alert('クラウドにデータを保存しました！\n（スマホで同期する際は、発行されたGist IDを入力してください）');
+        } catch (e) {
+            alert('保存に失敗しました。Access Tokenの権限（gistのチェック）や文字列が正しいか確認してください。');
+        } finally {
+            const btn = document.getElementById('saveCloudBtn');
+            btn.textContent = '☁️ クラウドへ保存';
+            btn.disabled = false;
+        }
+    }
+
+    async function loadFromCloud() {
+        const token = document.getElementById('githubToken').value.trim();
+        const gistId = document.getElementById('gistId').value.trim();
+
+        if (!token || !gistId) {
+            alert('復元には Access Token と Gist ID の両方が必要です。');
+            return;
+        }
+
+        const headers = {
+            'Authorization': `token ${token}`,
+            'Accept': 'application/vnd.github.v3+json'
+        };
+
+        try {
+            const btn = document.getElementById('loadCloudBtn');
+            btn.textContent = '復元中...';
+            btn.disabled = true;
+
+            const response = await fetch(`${GITHUB_API}/${gistId}`, { headers });
+            if (!response.ok) throw new Error('API Error');
+            const result = await response.json();
+            
+            const content = result.files["sleep_data.json"].content;
+            const importedData = JSON.parse(content);
+            
+            if (confirm('現在のローカルデータをクラウドのデータで上書きしますか？')) {
+                sleepData = importedData;
+                localStorage.setItem('githubToken', token);
+                localStorage.setItem('gistId', gistId);
+                saveAndRender();
+                alert('クラウドからデータを復元しました！');
+                closeCloudModal();
+            }
+        } catch (e) {
+            alert('読み込みに失敗しました。Access Token と Gist ID が正しいか確認してください。');
+        } finally {
+            const btn = document.getElementById('loadCloudBtn');
+            btn.textContent = '☁️ クラウドから復元';
+            btn.disabled = false;
+        }
+    }
+
+    // 初回描画
+    applyChartUpdate();
     renderHistory();
 </script>
 

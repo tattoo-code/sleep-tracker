@@ -112,7 +112,7 @@
             background: #fff;
         }
 
-        /* 目標設定エリア (青っぽく変更) */
+        /* 目標設定エリア */
         .target-setting-group {
             display: flex;
             flex-direction: column;
@@ -168,7 +168,7 @@
             color: white;
         }
 
-        /* アクション＆フィルターバー (グラフの下) */
+        /* アクション＆フィルターバー */
         .action-bar {
             display: flex;
             flex-direction: column;
@@ -315,7 +315,6 @@
             font-size: 0.8rem;
         }
 
-        /* 最下部の全データクリアエリア */
         .clear-section {
             margin-top: 25px;
             border-top: 2px solid #ffcdd2;
@@ -330,7 +329,6 @@
             border-radius: 4px;
         }
 
-        /* モーダル */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -357,7 +355,6 @@
             color: #555;
         }
 
-        /* PC向けレイアウト調整 */
         @media (min-width: 600px) {
             .input-row {
                 flex-direction: row;
@@ -428,7 +425,7 @@
         </div>
     </div>
 
-    <!-- 目標設定エリア (青っぽく変更) -->
+    <!-- 目標設定エリア -->
     <div class="target-setting-group">
         <div class="target-setting-row">
             <label>目標:</label>
@@ -438,10 +435,10 @@
         </div>
         <button id="toggleTargetBtn" class="target-btn active" onclick="toggleTargetDisplay()">目標表示を消す</button>
         <button id="toggleActivityBtn" class="activity-btn active" onclick="toggleActivityDisplay()">社会適合者の活動時間の表示を消す</button>
-        <button id="toggleAxisBtn" class="target-btn active" onclick="toggleAxisDisplay()">横軸を0時基準に戻す</button>
+        <button id="toggleAxisBtn" class="target-btn" onclick="toggleAxisDisplay()">横軸を起床目標時間に合わせる</button>
     </div>
 
-    <!-- フィルター ＋ アクションボタン群 (グラフの下) -->
+    <!-- フィルター ＋ アクションボタン群 -->
     <div class="action-bar">
         <select id="rangeFilter" class="filter-select" onchange="handleFilterChange()">
             <option value="all" selected>📅 すべて表示</option>
@@ -500,12 +497,12 @@
         <ul class="history-list" id="historyList"></ul>
     </div>
 
-    <!-- 全データクリア (最下部) -->
+    <!-- 全データクリア -->
     <div class="clear-section">
         <button onclick="clearData()" class="btn-danger">全データクリア</button>
     </div>
 
-    <!-- ジョークアプリの注意書き (最下部) -->
+    <!-- ジョークアプリの注意書き -->
     <div style="text-align: center; margin-top: 20px; font-size: 0.85rem; color: #666;">
         ※自分用のジョークアプリです。
     </div>
@@ -527,7 +524,7 @@
 <script>
     let isTargetVisible = true;
     let isActivityVisible = true;
-    let isAxisShifted = true;
+    let isAxisShifted = false; // デフォルトで0時基準
     let currentDailyTotals = {};
     let currentDayNightReversed = {};
 
@@ -573,7 +570,6 @@
                 let duration = endH - startH;
                 if (duration <= 0) duration += 24;
 
-                // 目標表示を青っぽく変更（ブルーの半透明ハイライト）
                 ctx.fillStyle = 'rgba(33, 150, 243, 0.15)';
                 for (let k = -1; k <= 1; k++) {
                     let s = startH + k * 24;
@@ -829,7 +825,7 @@
         };
     }
 
-    const initialAxisOffset = timeToDecimal('06:00');
+    const initialAxisOffset = 0; // デフォルト0時基準
     const chartInit = updateChartData(initialAxisOffset);
     currentDailyTotals = chartInit.dailyTotals;
     currentDayNightReversed = chartInit.dayNightReversed;
@@ -1346,12 +1342,13 @@
         document.getElementById('codeModal').style.display = 'none';
     }
 
+    // ★ グラフ画像に「目標睡眠時間」と「社会適合者の活動時間」の注釈を含めて生成
     function getCombinedChartCanvas() {
         const chartCanvas = document.getElementById('sleepChart');
         const width = chartCanvas.width;
         const height = chartCanvas.height;
         
-        const extraHeight = 50;
+        const extraHeight = 70; // 2段の注釈を収めるため高さを確保
         const combinedCanvas = document.createElement('canvas');
         combinedCanvas.width = width;
         combinedCanvas.height = height + extraHeight;
@@ -1363,29 +1360,42 @@
         ctx.drawImage(chartCanvas, 0, 0);
         
         ctx.save();
-        ctx.font = 'bold 13px sans-serif';
+        ctx.font = 'bold 12px sans-serif';
         ctx.textBaseline = 'middle';
-        ctx.textAlign = 'center';
         
-        const legendY = height + extraHeight / 2;
-        const blockWidth = 220;
-        const startX = (width - blockWidth) / 2;
+        // 1段目（睡眠時間の種類：6h以下、6〜9h、9h以上）
+        let row1Y = height + 20;
+        let startX1 = (width - 240) / 2;
         
         ctx.fillStyle = 'rgba(54, 162, 235, 0.8)';
-        ctx.fillRect(startX, legendY - 6, 12, 12);
+        ctx.fillRect(startX1, row1Y - 6, 12, 12);
         ctx.fillStyle = '#333333';
         ctx.textAlign = 'left';
-        ctx.fillText('6h以下', startX + 18, legendY);
+        ctx.fillText('6h以下', startX1 + 18, row1Y);
         
         ctx.fillStyle = 'rgba(76, 175, 80, 0.6)';
-        ctx.fillRect(startX + 85, legendY - 6, 12, 12);
+        ctx.fillRect(startX1 + 85, row1Y - 6, 12, 12);
         ctx.fillStyle = '#333333';
-        ctx.fillText('6〜9h', startX + 103, legendY);
+        ctx.fillText('6〜9h', startX1 + 103, row1Y);
         
         ctx.fillStyle = 'rgba(255, 99, 132, 0.8)';
-        ctx.fillRect(startX + 160, legendY - 6, 12, 12);
+        ctx.fillRect(startX1 + 160, row1Y - 6, 12, 12);
         ctx.fillStyle = '#333333';
-        ctx.fillText('9h以上', startX + 178, legendY);
+        ctx.fillText('9h以上', startX1 + 178, row1Y);
+        
+        // 2段目（目標睡眠時間・社会適合者の活動時間）
+        let row2Y = height + 48;
+        let startX2 = (width - 320) / 2;
+        
+        ctx.fillStyle = 'rgba(33, 150, 243, 0.3)';
+        ctx.fillRect(startX2, row2Y - 6, 12, 12);
+        ctx.fillStyle = '#333333';
+        ctx.fillText('目標睡眠時間', startX2 + 18, row2Y);
+        
+        ctx.fillStyle = 'rgba(255, 235, 59, 0.5)';
+        ctx.fillRect(startX2 + 130, row2Y - 6, 12, 12);
+        ctx.fillStyle = '#333333';
+        ctx.fillText('社会適合者の活動時間', startX2 + 148, row2Y);
         
         ctx.restore();
         return combinedCanvas;

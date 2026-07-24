@@ -138,6 +138,20 @@
             background-color: #4CAF50;
             color: white;
         }
+        .activity-btn {
+            background-color: #fff;
+            color: #f57f17;
+            border: 2px solid #fbc02d;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            width: 100%;
+        }
+        .activity-btn.active {
+            background-color: #fbc02d;
+            color: white;
+        }
 
         /* アクション＆フィルターバー (グラフの下) */
         .action-bar {
@@ -342,7 +356,7 @@
                 justify-content: center;
                 align-items: center;
             }
-            .target-btn {
+            .target-btn, .activity-btn {
                 width: auto;
             }
             .action-bar {
@@ -404,6 +418,7 @@
             <input type="time" id="targetEndInput" value="06:00" onchange="onTargetChange()">
         </div>
         <button id="toggleTargetBtn" class="target-btn active" onclick="toggleTargetDisplay()">目標表示を消す</button>
+        <button id="toggleActivityBtn" class="activity-btn active" onclick="toggleActivityDisplay()">活動時間の表示を消す</button>
         <button id="toggleAxisBtn" class="target-btn active" onclick="toggleAxisDisplay()">横軸を0時基準に戻す</button>
     </div>
 
@@ -486,6 +501,7 @@
 
 <script>
     let isTargetVisible = true;
+    let isActivityVisible = true; // デフォルトで活動時間表示
     let isAxisShifted = true;
     let currentDailyTotals = {};
     let currentDayNightReversed = {};
@@ -505,30 +521,49 @@
     const targetSleepPlugin = {
         id: 'targetSleep',
         beforeDraw(chart, args, options) {
-            if (!options.showTarget) return;
             const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
-            const startH = options.startH;
-            const endH = options.endH;
             const min = options.axisMin || 0;
             const max = options.axisMax || 24;
-            
-            let duration = endH - startH;
-            if (duration <= 0) duration += 24;
 
             ctx.save();
-            ctx.fillStyle = 'rgba(76, 175, 80, 0.15)';
 
-            for (let k = -1; k <= 1; k++) {
-                let s = startH + k * 24;
-                let e = s + duration;
-                let draw_s = Math.max(s, min);
-                let draw_e = Math.min(e, max);
-                if (draw_s < draw_e) {
-                    let x1 = x.getPixelForValue(draw_s);
-                    let x2 = x.getPixelForValue(draw_e);
-                    ctx.fillRect(Math.min(x1, x2), top, Math.abs(x2 - x1), bottom - top);
+            // 1. 一般的な活動時間 (9時〜17時) の黄色ハイライト描画
+            if (options.showActivity) {
+                ctx.fillStyle = 'rgba(255, 235, 59, 0.2)'; // 薄い黄色
+                for (let k = -1; k <= 1; k++) {
+                    let s = 9 + k * 24;
+                    let e = 17 + k * 24;
+                    let draw_s = Math.max(s, min);
+                    let draw_e = Math.min(e, max);
+                    if (draw_s < draw_e) {
+                        let x1 = x.getPixelForValue(draw_s);
+                        let x2 = x.getPixelForValue(draw_e);
+                        ctx.fillRect(Math.min(x1, x2), top, Math.abs(x2 - x1), bottom - top);
+                    }
                 }
             }
+
+            // 2. 目標睡眠時間の緑ハイライト描画
+            if (options.showTarget) {
+                const startH = options.startH;
+                const endH = options.endH;
+                let duration = endH - startH;
+                if (duration <= 0) duration += 24;
+
+                ctx.fillStyle = 'rgba(76, 175, 80, 0.15)';
+                for (let k = -1; k <= 1; k++) {
+                    let s = startH + k * 24;
+                    let e = s + duration;
+                    let draw_s = Math.max(s, min);
+                    let draw_e = Math.min(e, max);
+                    if (draw_s < draw_e) {
+                        let x1 = x.getPixelForValue(draw_s);
+                        let x2 = x.getPixelForValue(draw_e);
+                        ctx.fillRect(Math.min(x1, x2), top, Math.abs(x2 - x1), bottom - top);
+                    }
+                }
+            }
+
             ctx.restore();
         }
     };
@@ -840,6 +875,7 @@
                 },
                 targetSleep: {
                     showTarget: true,
+                    showActivity: true, // デフォルトで活動時間表示
                     startH: 22,
                     endH: 6,
                     axisMin: initialAxisOffset,
@@ -868,6 +904,7 @@
         sleepChart.options.scales.x.max = axisOffset + 24;
         
         sleepChart.options.plugins.targetSleep.showTarget = isTargetVisible;
+        sleepChart.options.plugins.targetSleep.showActivity = isActivityVisible;
         sleepChart.options.plugins.targetSleep.startH = timeToDecimal(document.getElementById('targetStartInput').value);
         sleepChart.options.plugins.targetSleep.endH = timeToDecimal(document.getElementById('targetEndInput').value);
         sleepChart.options.plugins.targetSleep.axisMin = axisOffset;
@@ -890,6 +927,19 @@
         applyChartUpdate();
     }
 
+    function toggleActivityDisplay() {
+        isActivityVisible = !isActivityVisible;
+        const btn = document.getElementById('toggleActivityBtn');
+        if (isActivityVisible) {
+            btn.textContent = '活動時間の表示を消す';
+            btn.classList.add('active');
+        } else {
+            btn.textContent = '活動時間をグラフに表示';
+            btn.classList.remove('active');
+        }
+        applyChartUpdate();
+    }
+
     function toggleAxisDisplay() {
         isAxisShifted = !isAxisShifted;
         const btn = document.getElementById('toggleAxisBtn');
@@ -904,7 +954,7 @@
     }
 
     function onTargetChange() {
-        if (isTargetVisible || isAxisShifted) {
+        if (isTargetVisible || isActivityVisible || isAxisShifted) {
             applyChartUpdate();
         }
     }
@@ -1091,6 +1141,7 @@
             const delBtn = document.createElement('button');
             delBtn.textContent = '削除';
             delBtn.className = 'btn-danger btn-small';
+            delBtn.style.padding = '5px 10px';
             delBtn.onclick = () => deleteRecord(d.id);
             li.appendChild(text);
             li.appendChild(delBtn);
@@ -1161,6 +1212,7 @@
         document.getElementById('codeModal').style.display = 'none';
     }
 
+    // ★ グラフ画像の下部中央に説明を配置するよう修正
     function getCombinedChartCanvas() {
         const chartCanvas = document.getElementById('sleepChart');
         const width = chartCanvas.width;
@@ -1180,23 +1232,33 @@
         ctx.save();
         ctx.font = 'bold 13px sans-serif';
         ctx.textBaseline = 'middle';
+        ctx.textAlign = 'center';
         
         const legendY = height + extraHeight / 2;
         
+        // 全体の幅を計算して中央に配置する
+        // 青6h以下, 緑6〜9h, 赤9h以上の3つのブロック
+        const blockWidth = 220;
+        const startX = (width - blockWidth) / 2;
+        
+        // 1つ目: 青6h以下
         ctx.fillStyle = 'rgba(54, 162, 235, 0.8)';
-        ctx.fillRect(40, legendY - 6, 12, 12);
+        ctx.fillRect(startX, legendY - 6, 12, 12);
         ctx.fillStyle = '#333333';
-        ctx.fillText('6h以下', 58, legendY);
+        ctx.textAlign = 'left';
+        ctx.fillText('6h以下', startX + 18, legendY);
         
+        // 2つ目: 緑6〜9h
         ctx.fillStyle = 'rgba(76, 175, 80, 0.6)';
-        ctx.fillRect(130, legendY - 6, 12, 12);
+        ctx.fillRect(startX + 85, legendY - 6, 12, 12);
         ctx.fillStyle = '#333333';
-        ctx.fillText('6〜9h', 148, legendY);
+        ctx.fillText('6〜9h', startX + 103, legendY);
         
+        // 3つ目: 赤9h以上
         ctx.fillStyle = 'rgba(255, 99, 132, 0.8)';
-        ctx.fillRect(215, legendY - 6, 12, 12);
+        ctx.fillRect(startX + 160, legendY - 6, 12, 12);
         ctx.fillStyle = '#333333';
-        ctx.fillText('9h以上', 233, legendY);
+        ctx.fillText('9h以上', startX + 178, legendY);
         
         ctx.restore();
         return combinedCanvas;
@@ -1213,7 +1275,7 @@
     async function tweetChart() {
         const combined = getCombinedChartCanvas();
         const pageUrl = window.location.href;
-        const textStr = `私の睡眠記録グラフです！📊\n#睡眠記録アプリ #睡眠改善\n${pageUrl}`;
+        const textStr = `私の睡眠記録グラフです！📊\n#睡眠社不度診断\n${pageUrl}`;
         
         if (navigator.share) {
             combined.toBlob(async (blob) => {
@@ -1236,7 +1298,7 @@
         }
     }
 
-    // ★ 社会不適合者度のツイート文言をフィルター選択に応じて変更
+    // ★ 社会不適合者度のツイート文言とハッシュタグを修正
     async function tweetMisfitScore() {
         const score = document.getElementById('misfitScore').innerText;
         const detail = document.getElementById('misfitDetail').innerText;
@@ -1272,10 +1334,10 @@
                 periodText = '';
             }
         } else {
-            periodText = '';
+            periodText = ''; // すべて表示の場合は期間を含めない
         }
         
-        const textStr = `私の${periodText}睡眠社不度は${score}でした！\n#睡眠社不度\n${pageUrl}`;
+        const textStr = `私の${periodText}睡眠社不度は${score}でした！\n#睡眠社不度診断\n${pageUrl}`;
         
         const canvas = document.createElement('canvas');
         canvas.width = 800;

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>睡眠時間記録アプリ</title>
+    <title>睡眠時間記録 (2026/07/24 14:05更新)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
@@ -41,7 +41,7 @@
         }
         h1 {
             text-align: center;
-            font-size: 1.4rem;
+            font-size: 1.3rem;
             margin-bottom: 15px;
         }
         
@@ -414,7 +414,7 @@
         <button class="help-btn" onclick="openHelpModal()">📖 使い方</button>
     </div>
 
-    <h1>睡眠時間記録</h1>
+    <h1>睡眠時間記録 (2026/07/24 14:05更新)</h1>
 
     <!-- 1. 就寝・起床フォーム (最上部) -->
     <div class="input-section">
@@ -552,7 +552,7 @@
             - フィルター（今週、先週、過去7日間、期間指定など）を切り替えることで、期間ごとのグラフやスコアを確認できます。</p>
 
             <p><strong>4. シェア・データ管理</strong><br>
-            - <strong>「𝕏 グラフをポスト」「𝕏 結果をポスト」</strong>から、専用の画像（4:3サイズ、凡例一列表示）を添えてXへシェアできます。<br>
+            - <strong>「𝕏 グラフをポスト」「𝕏 結果をポスト」</strong>から、専用の画像（凡例付き）を添えてXへシェアできます。<br>
             - <strong>「💾 セーブ」「📁ロード」</strong>を使って、別の端末やブラウザへデータを引き継ぐためのコードを発行・復元できます。</p>
         </div>
         <div style="text-align: center; margin-top: 15px;">
@@ -1437,42 +1437,48 @@
         document.getElementById('codeModal').style.display = 'none';
     }
 
-    // ★ グラフ画像：4:3 (1200x900) に合わせて縦横比を維持して拡大縮小して中央配置
+    // ★ 3:4 (900x1200) に合わせ、縦横比を維持してスケーリング＆最上部に「私の睡眠時間」タイトルを配置
     function getCombinedChartCanvas() {
         const chartCanvas = document.getElementById('sleepChart');
         const originalWidth = chartCanvas.width;
         const originalHeight = chartCanvas.height;
         
         const combinedCanvas = document.createElement('canvas');
-        combinedCanvas.width = 1200;
-        combinedCanvas.height = 900; // 4:3 アスペクト比
+        combinedCanvas.width = 900;
+        combinedCanvas.height = 1200; // 3:4 アスペクト比
         const ctx = combinedCanvas.getContext('2d');
         
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
         
-        // 4:3のキャンバスに合わせて縦横比を維持したまま拡大縮小して中央配置
-        const maxWidth = 1100;
-        const maxHeight = 700;
+        // 最上部に「私の睡眠時間」タイトルを描画
+        ctx.save();
+        ctx.font = 'bold 30px sans-serif';
+        ctx.fillStyle = '#333333';
+        ctx.textAlign = 'center';
+        ctx.fillText('私の睡眠時間', 450, 70);
+        ctx.restore();
         
-        let targetWidth = maxWidth;
-        let targetHeight = (originalHeight / originalWidth) * targetWidth;
-        
-        if (targetHeight > maxHeight) {
-            targetHeight = maxHeight;
-            targetWidth = (originalWidth / originalHeight) * targetHeight;
+        // グラフを縦横比維持で拡大縮小（スケーリング）して配置
+        const maxW = 820;
+        const maxH = 920;
+        let drawW = maxW;
+        let drawH = (originalHeight / originalWidth) * drawW;
+        if (drawH > maxH) {
+            drawH = maxH;
+            drawW = (originalWidth / originalHeight) * drawH;
         }
+        const startX = (900 - drawW) / 2;
+        const startY = 120 + (maxH - drawH) / 2;
         
-        const startX = (1200 - targetWidth) / 2;
-        const startY = 50;
+        ctx.drawImage(chartCanvas, startX, startY, drawW, drawH);
         
-        ctx.drawImage(chartCanvas, startX, startY, targetWidth, targetHeight);
-        
+        // 下部に一列＆大きめのフォントで凡例を描画
         ctx.save();
         ctx.font = 'bold 16px sans-serif';
         ctx.textBaseline = 'middle';
         
-        const legendY = startY + targetHeight + 60;
+        const legendY = 1130;
         
         const items = [
             { color: 'rgba(54, 162, 235, 0.8)', text: '6h以下' },
@@ -1491,7 +1497,7 @@
         });
         totalWidth -= padding;
         
-        let currentX = (1200 - totalWidth) / 2;
+        let currentX = (900 - totalWidth) / 2;
         
         items.forEach(item => {
             ctx.fillStyle = item.color;

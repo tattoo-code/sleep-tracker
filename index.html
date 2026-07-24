@@ -410,7 +410,6 @@
 <body>
 
 <div class="container">
-    <!-- 最上部に使い方ボタンを表示 -->
     <div class="top-bar">
         <button class="help-btn" onclick="openHelpModal()">📖 使い方</button>
     </div>
@@ -553,7 +552,7 @@
             - フィルター（今週、先週、過去7日間、期間指定など）を切り替えることで、期間ごとのグラフやスコアを確認できます。</p>
 
             <p><strong>4. シェア・データ管理</strong><br>
-            - <strong>「𝕏 グラフをポスト」「𝕏 結果をポスト」</strong>から、専用の画像（凡例付き）を添えてXへシェアできます。<br>
+            - <strong>「𝕏 グラフをポスト」「𝕏 結果をポスト」</strong>から、専用の画像（4:3サイズ、凡例一列表示）を添えてXへシェアできます。<br>
             - <strong>「💾 セーブ」「📁ロード」</strong>を使って、別の端末やブラウザへデータを引き継ぐためのコードを発行・復元できます。</p>
         </div>
         <div style="text-align: center; margin-top: 15px;">
@@ -838,10 +837,9 @@
             endD.setDate(endD.getDate() - 1);
             while (cur <= endD) {
                 const y = cur.getFullYear();
-                const m = String(cur.getDate()).padStart(2, '0'); // bug fix below
-                const mCorrect = String(cur.getMonth() + 1).padStart(2, '0');
+                const m = String(cur.getMonth() + 1).padStart(2, '0');
                 const dd = String(cur.getDate()).padStart(2, '0');
-                dateSet.add(`${y}-${mCorrect}-${dd}`);
+                dateSet.add(`${y}-${m}-${dd}`);
                 cur.setDate(cur.getDate() + 1);
             }
         } else if (filterType === 'custom') {
@@ -1439,24 +1437,34 @@
         document.getElementById('codeModal').style.display = 'none';
     }
 
-    // ★ グラフポスト画像：3:4 (900x1200) で、説明を一列に、フォントを大きくして描画
+    // ★ グラフ画像：4:3 (1200x900) に合わせて縦横比を維持して拡大縮小して中央配置
     function getCombinedChartCanvas() {
         const chartCanvas = document.getElementById('sleepChart');
         const originalWidth = chartCanvas.width;
         const originalHeight = chartCanvas.height;
         
         const combinedCanvas = document.createElement('canvas');
-        combinedCanvas.width = 900;
-        combinedCanvas.height = 1200; // 3:4 アスペクト比
+        combinedCanvas.width = 1200;
+        combinedCanvas.height = 900; // 4:3 アスペクト比
         const ctx = combinedCanvas.getContext('2d');
         
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
         
-        const targetWidth = 840;
-        const targetHeight = (originalHeight / originalWidth) * targetWidth;
-        const startX = (900 - targetWidth) / 2;
-        const startY = 80;
+        // 4:3のキャンバスに合わせて縦横比を維持したまま拡大縮小して中央配置
+        const maxWidth = 1100;
+        const maxHeight = 700;
+        
+        let targetWidth = maxWidth;
+        let targetHeight = (originalHeight / originalWidth) * targetWidth;
+        
+        if (targetHeight > maxHeight) {
+            targetHeight = maxHeight;
+            targetWidth = (originalWidth / originalHeight) * targetHeight;
+        }
+        
+        const startX = (1200 - targetWidth) / 2;
+        const startY = 50;
         
         ctx.drawImage(chartCanvas, startX, startY, targetWidth, targetHeight);
         
@@ -1464,7 +1472,7 @@
         ctx.font = 'bold 16px sans-serif';
         ctx.textBaseline = 'middle';
         
-        const legendY = startY + targetHeight + 90;
+        const legendY = startY + targetHeight + 60;
         
         const items = [
             { color: 'rgba(54, 162, 235, 0.8)', text: '6h以下' },
@@ -1483,7 +1491,7 @@
         });
         totalWidth -= padding;
         
-        let currentX = (900 - totalWidth) / 2;
+        let currentX = (1200 - totalWidth) / 2;
         
         items.forEach(item => {
             ctx.fillStyle = item.color;

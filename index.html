@@ -112,16 +112,16 @@
             background: #fff;
         }
 
-        /* 目標設定エリア (グラフの下) */
+        /* 目標設定エリア (青っぽく変更) */
         .target-setting-group {
             display: flex;
             flex-direction: column;
             gap: 8px;
             margin-bottom: 15px;
-            background: #eef5e9;
+            background: #e3f2fd;
             padding: 12px;
             border-radius: 6px;
-            border: 1px solid #c8e6c9;
+            border: 1px solid #bbdefb;
         }
         .target-setting-row {
             display: flex;
@@ -131,18 +131,18 @@
         }
         .target-setting-group label {
             font-weight: bold;
-            color: #2e7d32;
+            color: #1976d2;
             font-size: 0.95rem;
         }
         .target-setting-group input[type="time"] {
             padding: 6px;
-            border: 1px solid #ccc;
+            border: 1px solid #90caf9;
             border-radius: 4px;
         }
         .target-btn {
             background-color: #fff;
-            color: #2e7d32;
-            border: 2px solid #4CAF50;
+            color: #1976d2;
+            border: 2px solid #2196F3;
             padding: 8px 12px;
             border-radius: 4px;
             cursor: pointer;
@@ -150,7 +150,7 @@
             width: 100%;
         }
         .target-btn.active {
-            background-color: #4CAF50;
+            background-color: #2196F3;
             color: white;
         }
         .activity-btn {
@@ -428,7 +428,7 @@
         </div>
     </div>
 
-    <!-- 目標設定エリア (グラフの下) -->
+    <!-- 目標設定エリア (青っぽく変更) -->
     <div class="target-setting-group">
         <div class="target-setting-row">
             <label>目標:</label>
@@ -437,7 +437,7 @@
             <input type="time" id="targetEndInput" value="06:00" onchange="onTargetChange()">
         </div>
         <button id="toggleTargetBtn" class="target-btn active" onclick="toggleTargetDisplay()">目標表示を消す</button>
-        <button id="toggleActivityBtn" class="activity-btn active" onclick="toggleActivityDisplay()">活動時間の表示を消す</button>
+        <button id="toggleActivityBtn" class="activity-btn active" onclick="toggleActivityDisplay()">社会適合者の活動時間の表示を消す</button>
         <button id="toggleAxisBtn" class="target-btn active" onclick="toggleAxisDisplay()">横軸を0時基準に戻す</button>
     </div>
 
@@ -504,6 +504,11 @@
     <div class="clear-section">
         <button onclick="clearData()" class="btn-danger">全データクリア</button>
     </div>
+
+    <!-- ジョークアプリの注意書き (最下部) -->
+    <div style="text-align: center; margin-top: 20px; font-size: 0.85rem; color: #666;">
+        ※自分用のジョークアプリです。
+    </div>
 </div>
 
 <!-- モーダル -->
@@ -568,7 +573,8 @@
                 let duration = endH - startH;
                 if (duration <= 0) duration += 24;
 
-                ctx.fillStyle = 'rgba(76, 175, 80, 0.15)';
+                // 目標表示を青っぽく変更（ブルーの半透明ハイライト）
+                ctx.fillStyle = 'rgba(33, 150, 243, 0.15)';
                 for (let k = -1; k <= 1; k++) {
                     let s = startH + k * 24;
                     let e = s + duration;
@@ -608,7 +614,6 @@
         document.getElementById('endDateInput').value = dateObj.toISOString().split('T')[0];
     }
 
-    // ★ ワンタップで現在時刻をセットする関数
     function setNowAsStart() {
         const now = new Date();
         const y = now.getFullYear();
@@ -975,10 +980,10 @@
         isActivityVisible = !isActivityVisible;
         const btn = document.getElementById('toggleActivityBtn');
         if (isActivityVisible) {
-            btn.textContent = '活動時間の表示を消す';
+            btn.textContent = '社会適合者の活動時間の表示を消す';
             btn.classList.add('active');
         } else {
-            btn.textContent = '活動時間をグラフに表示';
+            btn.textContent = '社会適合者の活動時間をグラフに表示';
             btn.classList.remove('active');
         }
         applyChartUpdate();
@@ -1252,7 +1257,6 @@
         document.getElementById('codeModal').style.display = 'flex';
     }
 
-    // ★ 外部データインポートモーダル (他アプリ・スマホ使用時間データ対応)
     function openImportModal() {
         document.getElementById('codeModalTitle').innerText = '📥 アプリ・外部データインポート';
         document.getElementById('codeModalDesc').innerText = '他の睡眠管理アプリやスマホの使用時間等のデータ（JSON形式、または「YYYY-MM-DD HH:MM ~ YYYY-MM-DD HH:MM」形式のテキスト）を貼り付けてください。';

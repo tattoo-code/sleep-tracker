@@ -38,6 +38,21 @@
             border: 1px solid #ddd;
             margin-bottom: 15px;
         }
+        .quick-btn-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .quick-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
         .input-row {
             display: flex;
             flex-direction: column;
@@ -68,7 +83,7 @@
             font-size: 0.95rem;
             width: 100%;
         }
-        .input-section button {
+        .input-section > button {
             width: 100%;
             padding: 12px;
             background-color: #4CAF50;
@@ -191,7 +206,7 @@
         }
         .action-buttons {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(2, 1fr);
             gap: 8px;
         }
         .action-buttons button,
@@ -385,6 +400,10 @@
 
     <!-- 1. 就寝・起床フォーム (最上部) -->
     <div class="input-section">
+        <div class="quick-btn-row">
+            <button onclick="setNowAsStart()" class="quick-btn" style="background-color: #1976d2;">🌙 寝る！(睡眠開始)</button>
+            <button onclick="setNowAsEnd()" class="quick-btn" style="background-color: #f57c00;">☀️ 起きた！(睡眠終了)</button>
+        </div>
         <div class="input-row">
             <div class="time-wrap">
                 <label>就寝</label>
@@ -445,6 +464,7 @@
         <div class="action-buttons" style="margin-top: 5px;">
             <button onclick="openSaveModal()" class="btn-outline">💾 セーブ</button>
             <button onclick="openLoadModal()" class="btn-outline">📁 ロード</button>
+            <button onclick="openImportModal()" class="btn-outline" style="background:#e3f2fd; color:#0d47a1;">📥 アプリ連携</button>
             <button onclick="downloadImage()" class="btn-outline">📷 画像保存</button>
             <button onclick="tweetChart()" class="btn-x">𝕏 グラフをポスト</button>
         </div>
@@ -501,7 +521,7 @@
 
 <script>
     let isTargetVisible = true;
-    let isActivityVisible = true; // デフォルトで活動時間表示
+    let isActivityVisible = true;
     let isAxisShifted = true;
     let currentDailyTotals = {};
     let currentDayNightReversed = {};
@@ -527,9 +547,8 @@
 
             ctx.save();
 
-            // 1. 一般的な活動時間 (9時〜17時) の黄色ハイライト描画
             if (options.showActivity) {
-                ctx.fillStyle = 'rgba(255, 235, 59, 0.2)'; // 薄い黄色
+                ctx.fillStyle = 'rgba(255, 235, 59, 0.2)';
                 for (let k = -1; k <= 1; k++) {
                     let s = 9 + k * 24;
                     let e = 17 + k * 24;
@@ -543,7 +562,6 @@
                 }
             }
 
-            // 2. 目標睡眠時間の緑ハイライト描画
             if (options.showTarget) {
                 const startH = options.startH;
                 const endH = options.endH;
@@ -588,6 +606,32 @@
             dateObj.setDate(dateObj.getDate() + 1);
         }
         document.getElementById('endDateInput').value = dateObj.toISOString().split('T')[0];
+    }
+
+    // ★ ワンタップで現在時刻をセットする関数
+    function setNowAsStart() {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        
+        document.getElementById('startDateInput').value = `${y}-${m}-${d}`;
+        document.getElementById('startTimeInput').value = `${hh}:${mm}`;
+        autoSetEndDate();
+    }
+
+    function setNowAsEnd() {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        
+        document.getElementById('endDateInput').value = `${y}-${m}-${d}`;
+        document.getElementById('endTimeInput').value = `${hh}:${mm}`;
     }
 
     document.getElementById('startDateInput').addEventListener('change', autoSetEndDate);
@@ -875,7 +919,7 @@
                 },
                 targetSleep: {
                     showTarget: true,
-                    showActivity: true, // デフォルトで活動時間表示
+                    showActivity: true,
                     startH: 22,
                     endH: 6,
                     axisMin: initialAxisOffset,
@@ -1208,11 +1252,96 @@
         document.getElementById('codeModal').style.display = 'flex';
     }
 
+    // ★ 外部データインポートモーダル (他アプリ・スマホ使用時間データ対応)
+    function openImportModal() {
+        document.getElementById('codeModalTitle').innerText = '📥 アプリ・外部データインポート';
+        document.getElementById('codeModalDesc').innerText = '他の睡眠管理アプリやスマホの使用時間等のデータ（JSON形式、または「YYYY-MM-DD HH:MM ~ YYYY-MM-DD HH:MM」形式のテキスト）を貼り付けてください。';
+        const textArea = document.getElementById('dataCodeArea');
+        textArea.value = '';
+        textArea.readOnly = false;
+        
+        const actionBtn = document.getElementById('codeActionBtn');
+        actionBtn.innerText = '📥 インポート実行';
+        actionBtn.onclick = () => {
+            const rawText = document.getElementById('dataCodeArea').value.trim();
+            if (!rawText) {
+                alert('データを入力してください。');
+                return;
+            }
+            try {
+                let importedRecords = [];
+                if (rawText.startsWith('[') || rawText.startsWith('{')) {
+                    const parsed = JSON.parse(rawText);
+                    const arr = Array.isArray(parsed) ? parsed : [parsed];
+                    importedRecords = arr.map(item => {
+                        const sDate = item.startDate || item.start_date || item.date;
+                        const sTime = item.start || item.start_time || '23:00';
+                        const eDate = item.endDate || item.end_date || sDate;
+                        const eTime = item.end || item.end_time || '07:00';
+                        const h = calculateHours(sDate, sTime, eDate, eTime);
+                        return {
+                            id: Date.now() + Math.random(),
+                            startDate: sDate,
+                            start: sTime,
+                            endDate: eDate,
+                            end: eTime,
+                            hours: h
+                        };
+                    });
+                } else {
+                    const lines = rawText.split('\n');
+                    lines.forEach(line => {
+                        const match = line.match(/(\d{4}[-/]\d{1,2}[-/]\d{1,2})\D+(\d{1,2}:\d{2})\D+(\d{4}[-/]\d{1,2}[-/]\d{1,2})\D+(\d{1,2}:\d{2})/) ||
+                                      line.match(/(\d{4}[-/]\d{1,2}[-/]\d{1,2})\D+(\d{1,2}:\d{2})\D+(\d{1,2}:\d{2})/);
+                        if (match) {
+                            let sDate = match[1].replace(/\//g, '-');
+                            let sTime = match[2];
+                            let eDate, eTime;
+                            if (match[4]) {
+                                eDate = match[3].replace(/\//g, '-');
+                                eTime = match[4];
+                            } else {
+                                eDate = sDate;
+                                eTime = match[3];
+                            }
+                            sDate = sDate.split('-').map(x => x.padStart(2, '0')).join('-');
+                            eDate = eDate.split('-').map(x => x.padStart(2, '0')).join('-');
+                            
+                            const h = calculateHours(sDate, sTime, eDate, eTime);
+                            importedRecords.push({
+                                id: Date.now() + Math.random(),
+                                startDate: sDate,
+                                start: sTime,
+                                endDate: eDate,
+                                end: eTime,
+                                hours: h
+                            });
+                        }
+                    });
+                }
+
+                if (importedRecords.length > 0) {
+                    if (confirm(`${importedRecords.length}件の睡眠データを検出しました。既存データに追加しますか？`)) {
+                        sleepData = sleepData.concat(importedRecords);
+                        saveAndRender();
+                        alert('インポートが完了しました！');
+                        closeCodeModal();
+                    }
+                } else {
+                    alert('有効な睡眠データを読み取れませんでした。フォーマットを確認してください。');
+                }
+            } catch (err) {
+                alert('データの解析に失敗しました。');
+            }
+        };
+        
+        document.getElementById('codeModal').style.display = 'flex';
+    }
+
     function closeCodeModal() {
         document.getElementById('codeModal').style.display = 'none';
     }
 
-    // ★ グラフ画像の下部中央に説明を配置するよう修正
     function getCombinedChartCanvas() {
         const chartCanvas = document.getElementById('sleepChart');
         const width = chartCanvas.width;
@@ -1235,26 +1364,20 @@
         ctx.textAlign = 'center';
         
         const legendY = height + extraHeight / 2;
-        
-        // 全体の幅を計算して中央に配置する
-        // 青6h以下, 緑6〜9h, 赤9h以上の3つのブロック
         const blockWidth = 220;
         const startX = (width - blockWidth) / 2;
         
-        // 1つ目: 青6h以下
         ctx.fillStyle = 'rgba(54, 162, 235, 0.8)';
         ctx.fillRect(startX, legendY - 6, 12, 12);
         ctx.fillStyle = '#333333';
         ctx.textAlign = 'left';
         ctx.fillText('6h以下', startX + 18, legendY);
         
-        // 2つ目: 緑6〜9h
         ctx.fillStyle = 'rgba(76, 175, 80, 0.6)';
         ctx.fillRect(startX + 85, legendY - 6, 12, 12);
         ctx.fillStyle = '#333333';
         ctx.fillText('6〜9h', startX + 103, legendY);
         
-        // 3つ目: 赤9h以上
         ctx.fillStyle = 'rgba(255, 99, 132, 0.8)';
         ctx.fillRect(startX + 160, legendY - 6, 12, 12);
         ctx.fillStyle = '#333333';
@@ -1298,7 +1421,6 @@
         }
     }
 
-    // ★ 社会不適合者度のツイート文言とハッシュタグを修正
     async function tweetMisfitScore() {
         const score = document.getElementById('misfitScore').innerText;
         const detail = document.getElementById('misfitDetail').innerText;
@@ -1334,7 +1456,7 @@
                 periodText = '';
             }
         } else {
-            periodText = ''; // すべて表示の場合は期間を含めない
+            periodText = '';
         }
         
         const textStr = `私の${periodText}睡眠社不度は${score}でした！\n#睡眠社不度診断\n${pageUrl}`;

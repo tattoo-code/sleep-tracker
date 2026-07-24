@@ -411,9 +411,9 @@
     <div class="action-bar">
         <select id="rangeFilter" class="filter-select" onchange="handleFilterChange()">
             <option value="all" selected>📅 すべて表示</option>
-            <option value="thisWeek">今週 (週別)</option>
+            <option value="thisWeek">今週</option>
             <option value="lastWeek">先週</option>
-            <option value="thisMonth">今月 (月別)</option>
+            <option value="thisMonth">今月</option>
             <option value="lastMonth">先月</option>
             <option value="past7">過去7日間</option>
             <option value="past14">過去14日間</option>
@@ -978,7 +978,6 @@
 
         const totalDays = sortedDates.length;
         
-        // 社会不適合者度の計算：(昼夜逆転日 ＋ 9時間以上睡眠の日) ÷ 記録日数
         let misfitDaysCount = 0;
         sortedDates.forEach(dateStr => {
             const isRev = currentDayNightReversed[dateStr];
@@ -1092,7 +1091,6 @@
             const delBtn = document.createElement('button');
             delBtn.textContent = '削除';
             delBtn.className = 'btn-danger btn-small';
-            delBtn.style.padding = '5px 10px';
             delBtn.onclick = () => deleteRecord(d.id);
             li.appendChild(text);
             li.appendChild(delBtn);
@@ -1238,7 +1236,6 @@
         }
     }
 
-    // ★ 社会不適合者度の共有画像を 16:9 (例: 800×450px) に変更
     async function tweetMisfitScore() {
         const score = document.getElementById('misfitScore').innerText;
         const detail = document.getElementById('misfitDetail').innerText;

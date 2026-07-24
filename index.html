@@ -407,18 +407,18 @@
         <button id="toggleAxisBtn" class="target-btn active" onclick="toggleAxisDisplay()">横軸を0時基準に戻す</button>
     </div>
 
-    <!-- すべて表示などのフィルター ＋ アクションボタン群 (グラフの下) -->
+    <!-- フィルター ＋ アクションボタン群 (グラフの下) -->
     <div class="action-bar">
         <select id="rangeFilter" class="filter-select" onchange="handleFilterChange()">
-            <option value="all">📅 すべて表示</option>
-            <option value="thisMonth">今月 (月別)</option>
-            <option value="lastMonth">先月</option>
+            <option value="all" selected>📅 すべて表示</option>
             <option value="thisWeek">今週 (週別)</option>
             <option value="lastWeek">先週</option>
-            <option value="past7" selected>過去7日間</option>
+            <option value="thisMonth">今月 (月別)</option>
+            <option value="lastMonth">先月</option>
+            <option value="past7">過去7日間</option>
             <option value="past14">過去14日間</option>
             <option value="past30">過去30日間</option>
-            <option value="custom">任意の年月日から年月日を指定</option>
+            <option value="custom">期間指定</option>
         </select>
         
         <div id="customDateContainer" class="custom-date-container">
@@ -465,7 +465,7 @@
         <ul class="history-list" id="historyList"></ul>
     </div>
 
-    <!-- 2. 全データクリア (最下部) -->
+    <!-- 全データクリア (最下部) -->
     <div class="clear-section">
         <button onclick="clearData()" class="btn-danger">全データクリア</button>
     </div>
@@ -978,7 +978,7 @@
 
         const totalDays = sortedDates.length;
         
-        // ★社会不適合者度の計算：昼夜逆転日 または 9h以上睡眠の日 の合計日数 ÷ 記録日数
+        // 社会不適合者度の計算：(昼夜逆転日 ＋ 9時間以上睡眠の日) ÷ 記録日数
         let misfitDaysCount = 0;
         sortedDates.forEach(dateStr => {
             const isRev = currentDayNightReversed[dateStr];
@@ -1092,6 +1092,7 @@
             const delBtn = document.createElement('button');
             delBtn.textContent = '削除';
             delBtn.className = 'btn-danger btn-small';
+            delBtn.style.padding = '5px 10px';
             delBtn.onclick = () => deleteRecord(d.id);
             li.appendChild(text);
             li.appendChild(delBtn);
@@ -1237,6 +1238,7 @@
         }
     }
 
+    // ★ 社会不適合者度の共有画像を 16:9 (例: 800×450px) に変更
     async function tweetMisfitScore() {
         const score = document.getElementById('misfitScore').innerText;
         const detail = document.getElementById('misfitDetail').innerText;
@@ -1244,8 +1246,8 @@
         const textStr = `私の睡眠社不度は${score}でした！\n#睡眠記録アプリ\n${pageUrl}`;
         
         const canvas = document.createElement('canvas');
-        canvas.width = 600;
-        canvas.height = 400;
+        canvas.width = 800;
+        canvas.height = 450;
         const ctx = canvas.getContext('2d');
         
         ctx.fillStyle = '#fff8f8';
@@ -1256,21 +1258,21 @@
         ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
         
         ctx.fillStyle = '#c62828';
-        ctx.font = 'bold 26px sans-serif';
+        ctx.font = 'bold 28px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('⚠️ 睡眠・社会不適合者度診断', canvas.width / 2, 75);
+        ctx.fillText('⚠️ 睡眠・社会不適合者度診断', canvas.width / 2, 85);
         
-        ctx.font = 'bold 90px sans-serif';
+        ctx.font = 'bold 100px sans-serif';
         ctx.fillStyle = '#c62828';
-        ctx.fillText(score, canvas.width / 2, 195);
+        ctx.fillText(score, canvas.width / 2, 220);
         
-        ctx.font = 'bold 20px sans-serif';
+        ctx.font = 'bold 22px sans-serif';
         ctx.fillStyle = '#555555';
-        ctx.fillText(detail, canvas.width / 2, 255);
+        ctx.fillText(detail, canvas.width / 2, 290);
         
         ctx.font = '16px sans-serif';
         ctx.fillStyle = '#888888';
-        ctx.fillText('睡眠時間記録アプリ', canvas.width / 2, 335);
+        ctx.fillText('睡眠時間記録アプリ', canvas.width / 2, 385);
 
         if (navigator.share) {
             canvas.toBlob(async (blob) => {

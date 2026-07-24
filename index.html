@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>睡眠時間記録 (2026/07/24 14:05更新)</title>
+    <title>睡眠時間記録 (2026/07/24 14:10更新)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
@@ -414,7 +414,7 @@
         <button class="help-btn" onclick="openHelpModal()">📖 使い方</button>
     </div>
 
-    <h1>睡眠時間記録 (2026/07/24 14:05更新)</h1>
+    <h1>睡眠時間記録 (2026/07/24 14:10更新)</h1>
 
     <!-- 1. 就寝・起床フォーム (最上部) -->
     <div class="input-section">
@@ -1437,7 +1437,7 @@
         document.getElementById('codeModal').style.display = 'none';
     }
 
-    // ★ 3:4 (900x1200) に合わせ、縦横比を維持してスケーリング＆最上部に「私の睡眠時間」タイトルを配置
+    // ★ グラフ画像：3:4 (900x1200) で、縦横比維持でいっぱいに拡大縮小 ＆ 最上部に「私の睡眠時間」タイトル
     function getCombinedChartCanvas() {
         const chartCanvas = document.getElementById('sleepChart');
         const originalWidth = chartCanvas.width;
@@ -1451,15 +1451,15 @@
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
         
-        // 最上部に「私の睡眠時間」タイトルを描画
+        // 最上部に「私の睡眠時間」タイトル
         ctx.save();
-        ctx.font = 'bold 30px sans-serif';
+        ctx.font = 'bold 32px sans-serif';
         ctx.fillStyle = '#333333';
         ctx.textAlign = 'center';
-        ctx.fillText('私の睡眠時間', 450, 70);
+        ctx.fillText('私の睡眠時間', 450, 75);
         ctx.restore();
         
-        // グラフを縦横比維持で拡大縮小（スケーリング）して配置
+        // グラフを描画領域（幅820px、高さ920px）にいっぱいに拡大縮小（縦横比維持で自動フィット）
         const maxW = 820;
         const maxH = 920;
         let drawW = maxW;
@@ -1469,7 +1469,7 @@
             drawW = (originalWidth / originalHeight) * drawH;
         }
         const startX = (900 - drawW) / 2;
-        const startY = 120 + (maxH - drawH) / 2;
+        const startY = 130 + (maxH - drawH) / 2;
         
         ctx.drawImage(chartCanvas, startX, startY, drawW, drawH);
         
@@ -1478,7 +1478,7 @@
         ctx.font = 'bold 16px sans-serif';
         ctx.textBaseline = 'middle';
         
-        const legendY = 1130;
+        const legendY = 1135;
         
         const items = [
             { color: 'rgba(54, 162, 235, 0.8)', text: '6h以下' },

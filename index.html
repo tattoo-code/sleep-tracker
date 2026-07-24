@@ -24,6 +24,21 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+        .top-bar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 5px;
+        }
+        .help-btn {
+            background-color: #607d8b;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
         h1 {
             text-align: center;
             font-size: 1.4rem;
@@ -344,8 +359,10 @@
             padding: 20px;
             border-radius: 8px;
             width: 100%;
-            max-width: 450px;
+            max-width: 500px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            max-height: 90vh;
+            overflow-y: auto;
         }
         .modal-close {
             float: right;
@@ -393,6 +410,11 @@
 <body>
 
 <div class="container">
+    <!-- 最上部に使い方ボタンを表示 -->
+    <div class="top-bar">
+        <button class="help-btn" onclick="openHelpModal()">📖 使い方</button>
+    </div>
+
     <h1>睡眠時間記録</h1>
 
     <!-- 1. 就寝・起床フォーム (最上部) -->
@@ -508,7 +530,39 @@
     </div>
 </div>
 
-<!-- モーダル -->
+<!-- 使い方モーダル -->
+<div id="helpModal" class="modal-overlay">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeHelpModal()">&times;</span>
+        <h2 style="margin-top:0; color:#1976d2; font-size:1.2rem;">📖 使い方・操作方法</h2>
+        <p style="font-size: 0.9rem; font-weight: bold; color: #333; line-height: 1.5; background: #e3f2fd; padding: 10px; border-radius: 6px;">
+            睡眠を記録し、自身の社会不適合者度を可視化するサイトです。
+        </p>
+        <div style="font-size: 0.85rem; color: #444; line-height: 1.6;">
+            <p><strong>1. 睡眠の記録方法</strong><br>
+            - <strong>「🌙 寝る！」</strong>ボタン：タップすると現在の時刻が就寝時間にセットされます。<br>
+            - <strong>「☀️ 起きた！」</strong>ボタン：タップすると現在の時刻が起床時間にセットされます。<br>
+            - <strong>「記録する」</strong>ボタン：設定した就寝・起床日時を保存します（確認ポップアップが表示されます）。</p>
+            
+            <p><strong>2. アプリ連携・外部インポート</strong><br>
+            - <strong>「📥 アプリ連携」</strong>ボタンから、他の睡眠管理アプリやスマホの使用時間データ（JSON形式、またはテキスト形式）を一括取り込みできます。</p>
+
+            <p><strong>3. グラフと診断の見方</strong><br>
+            - 睡眠時間は時間に応じて色分けされます（青：6h以下、緑：6〜9h、赤：9h以上）。バーの中には「💤」が表示されます。<br>
+            - <strong>社会不適合者度（%）</strong>は、「昼夜逆転日（9時〜17時に睡眠が被る日）」または「9時間以上睡眠の日」に該当する日数が、記録日数全体に占める割合で算出されます。<br>
+            - フィルター（今週、先週、過去7日間、期間指定など）を切り替えることで、期間ごとのグラフやスコアを確認できます。</p>
+
+            <p><strong>4. シェア・データ管理</strong><br>
+            - <strong>「𝕏 グラフをポスト」「𝕏 結果をポスト」</strong>から、専用の画像（凡例付き）を添えてXへシェアできます。<br>
+            - <strong>「💾 セーブ」「📁ロード」</strong>を使って、別の端末やブラウザへデータを引き継ぐためのコードを発行・復元できます。</p>
+        </div>
+        <div style="text-align: center; margin-top: 15px;">
+            <button onclick="closeHelpModal()" style="background-color: #1976d2; color: white; border: none; padding: 8px 20px; border-radius: 4px; font-weight: bold; cursor: pointer;">閉じる</button>
+        </div>
+    </div>
+</div>
+
+<!-- セーブ/ロード/インポート共通モーダル -->
 <div id="codeModal" class="modal-overlay">
     <div class="modal-content">
         <span class="modal-close" onclick="closeCodeModal()">&times;</span>
@@ -528,7 +582,6 @@
     let currentDailyTotals = {};
     let currentDayNightReversed = {};
 
-    // 曜日付きフォーマット用ヘルパー関数
     function formatDateWithDay(dateStr) {
         if (!dateStr) return '';
         const parts = dateStr.split('-');
@@ -785,9 +838,10 @@
             endD.setDate(endD.getDate() - 1);
             while (cur <= endD) {
                 const y = cur.getFullYear();
-                const m = String(cur.getMonth() + 1).padStart(2, '0');
+                const m = String(cur.getDate()).padStart(2, '0'); // bug fix below
+                const mCorrect = String(cur.getMonth() + 1).padStart(2, '0');
                 const dd = String(cur.getDate()).padStart(2, '0');
-                dateSet.add(`${y}-${m}-${dd}`);
+                dateSet.add(`${y}-${mCorrect}-${dd}`);
                 cur.setDate(cur.getDate() + 1);
             }
         } else if (filterType === 'custom') {
@@ -1230,6 +1284,13 @@
         });
     }
 
+    function openHelpModal() {
+        document.getElementById('helpModal').style.display = 'flex';
+    }
+    function closeHelpModal() {
+        document.getElementById('helpModal').style.display = 'none';
+    }
+
     function openSaveModal() {
         if (sleepData.length === 0) {
             alert('保存するデータがありません。');
@@ -1378,7 +1439,7 @@
         document.getElementById('codeModal').style.display = 'none';
     }
 
-    // ★ グラフポスト画像：3:4 (900x1200) にし、説明を一列に、フォントサイズを大きくする
+    // ★ グラフポスト画像：3:4 (900x1200) で、説明を一列に、フォントを大きくして描画
     function getCombinedChartCanvas() {
         const chartCanvas = document.getElementById('sleepChart');
         const originalWidth = chartCanvas.width;
@@ -1386,13 +1447,12 @@
         
         const combinedCanvas = document.createElement('canvas');
         combinedCanvas.width = 900;
-        combinedCanvas.height = 1200; // 3:4 のアスペクト比
+        combinedCanvas.height = 1200; // 3:4 アスペクト比
         const ctx = combinedCanvas.getContext('2d');
         
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
         
-        // 上部にグラフを描画（幅840pxに合わせて中央配置）
         const targetWidth = 840;
         const targetHeight = (originalHeight / originalWidth) * targetWidth;
         const startX = (900 - targetWidth) / 2;
@@ -1400,15 +1460,12 @@
         
         ctx.drawImage(chartCanvas, startX, startY, targetWidth, targetHeight);
         
-        // 下部に、説明を一列（横並び）＆大きめのフォントで描画
         ctx.save();
-        ctx.font = 'bold 16px sans-serif'; // フォントサイズを大きく
+        ctx.font = 'bold 16px sans-serif';
         ctx.textBaseline = 'middle';
         
         const legendY = startY + targetHeight + 90;
         
-        // すべての説明項目を1つの横並びグループとして中央配置
-        // 項目： [■ 6h以下] [■ 6〜9h] [■ 9h以上] [■ 目標睡眠時間] [■ 社会適合者の活動時間]
         const items = [
             { color: 'rgba(54, 162, 235, 0.8)', text: '6h以下' },
             { color: 'rgba(76, 175, 80, 0.6)', text: '6〜9h' },
@@ -1417,10 +1474,9 @@
             { color: 'rgba(255, 235, 59, 0.5)', text: '社会適合者の活動時間' }
         ];
         
-        // ざっくり全体の幅を測る（簡易計測）
         ctx.font = 'bold 15px sans-serif';
         let totalWidth = 0;
-        const padding = 24;
+        const padding = 20;
         items.forEach(item => {
             const metrics = ctx.measureText(item.text);
             totalWidth += 16 + 8 + metrics.width + padding;
@@ -1430,11 +1486,9 @@
         let currentX = (900 - totalWidth) / 2;
         
         items.forEach(item => {
-            // カラーボックス
             ctx.fillStyle = item.color;
             ctx.fillRect(currentX, legendY - 8, 16, 16);
             
-            // テキスト
             ctx.fillStyle = '#333333';
             ctx.textAlign = 'left';
             ctx.fillText(item.text, currentX + 24, legendY);
@@ -1498,7 +1552,6 @@
         } else if (filterType === 'lastMonth') {
             periodText = '先月';
         } else if (filterType === 'past7') {
-            periodTest = '過去7日間';
             periodText = '過去7日間';
         } else if (filterType === 'past14') {
             periodText = '過去14日間';

@@ -6,147 +6,194 @@
     <title>睡眠時間記録アプリ</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
             font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 10px;
             background-color: #f5f5f5;
             color: #333;
         }
         .container {
-            max-width: 1000px;
+            max-width: 900px;
             margin: 0 auto;
             background: #fff;
-            padding: 20px;
+            padding: 15px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         h1 {
             text-align: center;
-            font-size: 1.5rem;
-            margin-bottom: 20px;
+            font-size: 1.4rem;
+            margin-bottom: 15px;
         }
-        .action-bar {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: center;
+        
+        /* 入力フォーム (最上部) */
+        .input-section {
             background: #f9f9f9;
             padding: 15px;
             border-radius: 8px;
             border: 1px solid #ddd;
+            margin-bottom: 15px;
         }
-        .filter-select {
-            padding: 10px;
-            border: 2px solid #4CAF50;
-            border-radius: 4px;
-            font-size: 1rem;
-            font-weight: bold;
-            color: #2e7d32;
-            cursor: pointer;
-            background: #fff;
-        }
-        .input-group {
+        .input-row {
             display: flex;
+            flex-direction: column;
             gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: center;
-        }
-        input[type="date"], input[type="time"] {
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 1rem;
+            margin-bottom: 10px;
         }
         .time-wrap {
             display: flex;
             align-items: center;
-            gap: 5px;
-            background: #f9f9f9;
-            padding: 10px;
+            gap: 8px;
+            background: #fff;
+            padding: 8px;
             border-radius: 6px;
-            border: 1px solid #ddd;
+            border: 1px solid #ccc;
+            width: 100%;
         }
         .time-wrap label {
             font-weight: bold;
             color: #555;
-            margin-right: 5px;
+            min-width: 35px;
         }
-        button, .btn-label {
-            padding: 10px 15px;
+        .time-wrap input[type="date"],
+        .time-wrap input[type="time"] {
+            flex: 1;
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            width: 100%;
+        }
+        .input-section button {
+            width: 100%;
+            padding: 12px;
             background-color: #4CAF50;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 0.95rem;
-            transition: opacity 0.3s;
-            display: inline-block;
-            text-align: center;
+            font-size: 1rem;
+            font-weight: bold;
         }
-        button:hover, .btn-label:hover { opacity: 0.8; }
-        .btn-danger { background-color: #f44336; }
-        .btn-outline {
-            background-color: #fff;
-            color: #555;
-            border: 1px solid #ccc;
-        }
-        .btn-x {
-            background-color: #0f1419;
-            color: white;
-        }
+
+        /* 目標設定エリア */
         .target-setting-group {
             display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
+            flex-direction: column;
+            gap: 8px;
             margin-bottom: 15px;
             background: #eef5e9;
-            padding: 10px 15px;
+            padding: 12px;
             border-radius: 6px;
             border: 1px solid #c8e6c9;
+        }
+        .target-setting-row {
+            display: flex;
+            align-items: center;
+            gap: 5px;
             flex-wrap: wrap;
         }
         .target-setting-group label {
             font-weight: bold;
             color: #2e7d32;
+            font-size: 0.95rem;
+        }
+        .target-setting-group input[type="time"] {
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
         }
         .target-btn {
             background-color: #fff;
             color: #2e7d32;
             border: 2px solid #4CAF50;
-            padding: 8px 16px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            width: 100%;
         }
         .target-btn.active {
             background-color: #4CAF50;
             color: white;
         }
+
+        /* アクション＆フィルターバー (グラフの上) */
+        .action-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 15px;
+            background: #f0f4f8;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #d0e1fd;
+        }
+        .filter-select {
+            padding: 10px;
+            border: 2px solid #2196F3;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #0d47a1;
+            cursor: pointer;
+            background: #fff;
+            width: 100%;
+        }
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .action-buttons button,
+        .action-buttons .btn-label {
+            padding: 10px;
+            font-size: 0.9rem;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            background: #fff;
+            color: #333;
+            cursor: pointer;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-x {
+            background-color: #0f1419 !important;
+            color: white !important;
+            grid-column: span 2;
+        }
+
+        button:hover, .btn-label:hover { opacity: 0.8; }
+        .btn-danger { background-color: #f44336; color: white; border: none; }
+
         .legend-container {
             display: flex;
             justify-content: center;
-            gap: 15px;
+            gap: 10px;
             margin-bottom: 10px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             flex-wrap: wrap;
         }
         .legend-item { display: flex; align-items: center; gap: 4px; }
         .legend-color {
             display: inline-block;
-            width: 14px;
-            height: 14px;
+            width: 12px;
+            height: 12px;
             border-radius: 3px;
         }
         
         .chart-container-wrapper {
             width: 100%;
-            max-height: 60vh;
+            max-height: 50vh;
             overflow-y: auto;
             overflow-x: hidden;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             border: 1px solid #ddd;
             border-radius: 4px;
             background: #fff;
@@ -159,25 +206,23 @@
 
         .stats-section {
             display: flex;
-            gap: 20px;
-            margin-top: 20px;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 15px;
             border-top: 1px solid #eee;
-            padding-top: 20px;
+            padding-top: 15px;
         }
-        @media (max-width: 800px) { .stats-section { flex-direction: column; } }
-        
         .stat-card {
-            flex: 1;
             background: #f0f7ff;
-            padding: 15px;
+            padding: 12px;
             border-radius: 8px;
             border: 1px solid #cce0ff;
         }
         .stat-card h3 {
             margin-top: 0;
-            font-size: 1.1rem;
+            font-size: 1rem;
             border-bottom: 2px solid #b3d4ff;
-            padding-bottom: 8px;
+            padding-bottom: 6px;
             color: #0056b3;
             text-align: center;
         }
@@ -185,23 +230,29 @@
             list-style: none;
             padding: 0;
             margin: 0;
-            max-height: 200px;
+            max-height: 180px;
             overflow-y: auto;
+            font-size: 0.9rem;
         }
         .stat-list li {
-            padding: 8px 0;
+            padding: 6px 0;
             border-bottom: 1px dashed #ccc;
         }
         .stat-list li:last-child { border-bottom: none; }
+        
         .history-section {
-            margin-top: 20px;
+            margin-top: 15px;
             border-top: 1px solid #eee;
-            padding-top: 20px;
+            padding-top: 15px;
+        }
+        .history-section h2 {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
         }
         .history-list {
             list-style: none;
             padding: 0;
-            max-height: 250px;
+            max-height: 200px;
             overflow-y: auto;
         }
         .history-item {
@@ -209,12 +260,33 @@
             justify-content: space-between;
             align-items: center;
             background: #fafafa;
-            padding: 10px 15px;
-            margin-bottom: 8px;
+            padding: 8px 10px;
+            margin-bottom: 6px;
             border-radius: 4px;
             border: 1px solid #eaeaea;
+            font-size: 0.9rem;
+        }
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 0.8rem;
         }
 
+        /* 最下部の全データクリアエリア */
+        .clear-section {
+            margin-top: 25px;
+            border-top: 2px solid #ffcdd2;
+            padding-top: 15px;
+            text-align: center;
+        }
+        .clear-section button {
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+
+        /* モーダル */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -223,23 +295,60 @@
             z-index: 1000;
             justify-content: center;
             align-items: center;
+            padding: 10px;
         }
         .modal-content {
             background: #fff;
-            padding: 25px;
+            padding: 20px;
             border-radius: 8px;
-            width: 90%;
-            max-width: 500px;
+            width: 100%;
+            max-width: 450px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
         .modal-close {
             float: right;
             cursor: pointer;
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             line-height: 1;
             color: #555;
         }
-        .modal-close:hover { color: #000; }
+
+        /* PC向けレイアウト調整 */
+        @media (min-width: 600px) {
+            .input-row {
+                flex-direction: row;
+                align-items: center;
+            }
+            .time-wrap {
+                flex: 1;
+            }
+            .target-setting-group {
+                flex-direction: row;
+                justify-content: center;
+                align-items: center;
+            }
+            .target-btn {
+                width: auto;
+            }
+            .action-bar {
+                flex-direction: row;
+                justify-content: space-between;
+            }
+            .filter-select {
+                width: auto;
+                flex: 1;
+            }
+            .action-buttons {
+                display: flex;
+                flex-wrap: wrap;
+            }
+            .btn-x {
+                grid-column: auto;
+            }
+            .stats-section {
+                flex-direction: row;
+            }
+        }
     </style>
 </head>
 <body>
@@ -247,6 +356,38 @@
 <div class="container">
     <h1>睡眠時間記録</h1>
 
+    <!-- 1. 就寝・起床フォーム (最上部) -->
+    <div class="input-section">
+        <div class="input-row">
+            <div class="time-wrap">
+                <label>就寝</label>
+                <input type="date" id="startDateInput" required>
+                <input type="time" id="startTimeInput" required>
+            </div>
+        </div>
+        <div class="input-row">
+            <div class="time-wrap">
+                <label>起床</label>
+                <input type="date" id="endDateInput" required>
+                <input type="time" id="endTimeInput" required>
+            </div>
+        </div>
+        <button onclick="addRecord()">記録する</button>
+    </div>
+
+    <!-- 目標設定エリア -->
+    <div class="target-setting-group">
+        <div class="target-setting-row">
+            <label>目標:</label>
+            <input type="time" id="targetStartInput" value="22:00" onchange="onTargetChange()">
+            <span>〜</span>
+            <input type="time" id="targetEndInput" value="06:00" onchange="onTargetChange()">
+        </div>
+        <button id="toggleTargetBtn" class="target-btn" onclick="toggleTargetDisplay()">目標をグラフに表示</button>
+        <button id="toggleAxisBtn" class="target-btn" onclick="toggleAxisDisplay()">横軸を起床目標時間に合わせる</button>
+    </div>
+
+    <!-- 3. すべて表示などのフィルター ＋ アクションボタン群 (グラフの上) -->
     <div class="action-bar">
         <select id="rangeFilter" class="filter-select" onchange="applyChartUpdate()">
             <option value="all">📅 すべて表示</option>
@@ -257,55 +398,34 @@
             <option value="past30">過去30日間</option>
         </select>
         
-        <button onclick="openSaveModal()" class="btn-outline">💾 セーブコード発行</button>
-        <button onclick="openLoadModal()" class="btn-outline">📁 コードでロード</button>
-        <button onclick="downloadImage()" class="btn-outline">📷 グラフ画像保存</button>
-        <button onclick="tweetChart()" class="btn-x">𝕏 グラフをポスト</button>
-    </div>
-    
-    <div class="input-group">
-        <div class="time-wrap">
-            <label>就寝</label>
-            <input type="date" id="startDateInput" required>
-            <input type="time" id="startTimeInput" required>
+        <div class="action-buttons">
+            <button onclick="openSaveModal()" class="btn-outline">💾 セーブ</button>
+            <button onclick="openLoadModal()" class="btn-outline">📁 ロード</button>
+            <button onclick="downloadImage()" class="btn-outline">📷 画像保存</button>
+            <button onclick="tweetChart()" class="btn-x">𝕏 グラフをポスト</button>
         </div>
-        <span style="font-weight: bold;">〜</span>
-        <div class="time-wrap">
-            <label>起床</label>
-            <input type="date" id="endDateInput" required>
-            <input type="time" id="endTimeInput" required>
-        </div>
-        <button onclick="addRecord()">記録する</button>
-        <button onclick="clearData()" class="btn-danger">全データクリア</button>
-    </div>
-
-    <div class="target-setting-group">
-        <label>目標睡眠時間:</label>
-        <input type="time" id="targetStartInput" value="22:00" onchange="onTargetChange()">
-        <span>〜</span>
-        <input type="time" id="targetEndInput" value="06:00" onchange="onTargetChange()">
-        <button id="toggleTargetBtn" class="target-btn" onclick="toggleTargetDisplay()">目標をグラフに表示</button>
-        <button id="toggleAxisBtn" class="target-btn" onclick="toggleAxisDisplay()">横軸を起床目標時間に合わせる</button>
     </div>
 
     <div class="legend-container">
-        <div class="legend-item"><span class="legend-color" style="background: rgba(54, 162, 235, 0.8);"></span> 6時間以下 (不足)</div>
-        <div class="legend-item"><span class="legend-color" style="background: rgba(76, 175, 80, 0.6);"></span> 6〜9時間 (適正)</div>
-        <div class="legend-item"><span class="legend-color" style="background: rgba(255, 99, 132, 0.8);"></span> 9時間以上 (過剰)</div>
+        <div class="legend-item"><span class="legend-color" style="background: rgba(54, 162, 235, 0.8);"></span> 6h以下</div>
+        <div class="legend-item"><span class="legend-color" style="background: rgba(76, 175, 80, 0.6);"></span> 6〜9h</div>
+        <div class="legend-item"><span class="legend-color" style="background: rgba(255, 99, 132, 0.8);"></span> 9h以上</div>
     </div>
 
+    <!-- グラフエリア -->
     <div class="chart-container-wrapper">
         <div class="chart-container">
             <canvas id="sleepChart"></canvas>
         </div>
     </div>
 
+    <!-- 統計セクション -->
     <div class="stats-section">
         <div class="stat-card" style="background: #fff8f8; border-color: #ffcdd2; display: flex; flex-direction: column; align-items: center; justify-content: center;">
             <h3 style="color: #c62828; width: 100%; border-bottom: 2px solid #ffcdd2;">⚠️ 社会不適合者度</h3>
-            <div id="misfitScore" style="font-size: 2.5rem; font-weight: bold; text-align: center; margin-top: 10px;">0%</div>
-            <div id="misfitDetail" style="text-align: center; font-size: 0.9rem; color: #555; margin-top: 5px; margin-bottom: 15px;">(昼夜逆転 0日 / 記録 0日)</div>
-            <button onclick="tweetMisfitScore()" class="btn-x" style="padding: 8px 16px; font-size: 0.9rem;">𝕏 結果をポスト</button>
+            <div id="misfitScore" style="font-size: 2.2rem; font-weight: bold; text-align: center; margin-top: 8px;">0%</div>
+            <div id="misfitDetail" style="text-align: center; font-size: 0.85rem; color: #555; margin-top: 4px; margin-bottom: 10px;">(昼夜逆転 0日 / 記録 0日)</div>
+            <button onclick="tweetMisfitScore()" class="btn-x" style="padding: 6px 12px; font-size: 0.85rem;">𝕏 結果をポスト</button>
         </div>
         <div class="stat-card">
             <h3>日別 合計睡眠時間</h3>
@@ -317,20 +437,27 @@
         </div>
     </div>
 
+    <!-- 履歴セクション -->
     <div class="history-section">
         <h2>記録履歴 (個別に削除できます)</h2>
         <ul class="history-list" id="historyList"></ul>
     </div>
+
+    <!-- 2. 全データクリア (最下部) -->
+    <div class="clear-section">
+        <button onclick="clearData()" class="btn-danger">全データクリア</button>
+    </div>
 </div>
 
+<!-- モーダル -->
 <div id="codeModal" class="modal-overlay">
     <div class="modal-content">
         <span class="modal-close" onclick="closeCodeModal()">&times;</span>
-        <h2 id="codeModalTitle" style="margin-top:0;">セーブデータ</h2>
-        <p id="codeModalDesc" style="font-size: 0.9rem; color: #555; line-height: 1.5;"></p>
-        <textarea id="dataCodeArea" style="width: 100%; height: 150px; padding: 10px; box-sizing: border-box; margin-bottom: 15px; font-family: monospace; font-size: 0.85rem; border-radius: 4px; border: 1px solid #ccc;"></textarea>
+        <h2 id="codeModalTitle" style="margin-top:0; font-size:1.2rem;">セーブデータ</h2>
+        <p id="codeModalDesc" style="font-size: 0.85rem; color: #555; line-height: 1.4;"></p>
+        <textarea id="dataCodeArea" style="width: 100%; height: 120px; padding: 8px; box-sizing: border-box; margin-bottom: 12px; font-family: monospace; font-size: 0.8rem; border-radius: 4px; border: 1px solid #ccc;"></textarea>
         <div style="display: flex; gap: 10px; justify-content: center;">
-            <button id="codeActionBtn" style="background-color: #4CAF50; flex:1; font-weight: bold;"></button>
+            <button id="codeActionBtn" style="background-color: #4CAF50; color:white; border:none; padding:10px; border-radius:4px; flex:1; font-weight: bold; cursor:pointer;"></button>
         </div>
     </div>
 </div>
@@ -619,7 +746,7 @@
                             const record = context.raw.record;
                             const sDate = record.startDate.substring(5).replace('-', '/');
                             const eDate = record.endDate.substring(5).replace('-', '/');
-                            return `${sDate} ${record.start} 〜 ${eDate} ${record.end} (計: ${record.hours.toFixed(1)}시간)`;
+                            return `${sDate} ${record.start} 〜 ${eDate} ${record.end} (計: ${record.hours.toFixed(1)}時間)`;
                         }
                     }
                 },
@@ -862,7 +989,6 @@
             const delBtn = document.createElement('button');
             delBtn.textContent = '削除';
             delBtn.className = 'btn-danger btn-small';
-            delBtn.style.padding = '5px 10px';
             delBtn.onclick = () => deleteRecord(d.id);
             li.appendChild(text);
             li.appendChild(delBtn);
@@ -940,39 +1066,22 @@
         link.click();
     }
 
-    // --- 共有機能 (navigator.share 形式に戻す) ---
-
-    async function tweetChart() {
-        const canvas = document.getElementById('sleepChart');
+    function tweetChart() {
+        downloadImage();
         const pageUrl = window.location.href;
         const textStr = `私の睡眠記録グラフです！📊\n#睡眠記録アプリ #睡眠改善\n${pageUrl}`;
         
-        if (navigator.share) {
-            canvas.toBlob(async (blob) => {
-                const file = new File([blob], 'sleep_chart.png', { type: 'image/png' });
-                try {
-                    await navigator.share({
-                        text: textStr,
-                        files: [file]
-                    });
-                } catch (err) {}
-            });
-        } else {
-            downloadImage();
-            alert('画像をダウンロードしました。\nポスト画面に手動で画像を添付してシェアしてください。');
-            const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(textStr)}`;
-            window.open(url, '_blank');
-        }
+        alert('グラフ画像をダウンロードしました。\n開いたX（Twitter）の投稿画面に画像を添付してポストしてください。');
+        const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(textStr)}`;
+        window.open(url, '_blank');
     }
 
-    // ★追加: 社会不適合者度を%と日数表示のある専用画像にしてシェアする関数
-    async function tweetMisfitScore() {
+    function tweetMisfitScore() {
         const score = document.getElementById('misfitScore').innerText;
         const detail = document.getElementById('misfitDetail').innerText;
         const pageUrl = window.location.href;
         const textStr = `私の睡眠社不度は${score}でした！\n#睡眠記録アプリ\n${pageUrl}`;
         
-        // 専用のCanvas（カード画像）を動的に生成
         const canvas = document.createElement('canvas');
         canvas.width = 600;
         canvas.height = 400;
@@ -1023,7 +1132,6 @@
         }
     }
 
-    // 初回描画
     applyChartUpdate();
     renderHistory();
 </script>
